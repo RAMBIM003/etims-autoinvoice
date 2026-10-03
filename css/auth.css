@@ -1,0 +1,22 @@
+body.auth{background:var(--soft)}
+.split{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 54px)}
+.side{background:linear-gradient(#000a,#000a),url(../assets/img/3.jfif) center/cover #222;color:#fff;display:flex;flex-direction:column;justify-content:center;padding:50px}
+.side h2{font-size:32px}
+.panel{display:flex;align-items:center;justify-content:center;padding:30px}
+.card{background:#fff;width:100%;max-width:440px;padding:32px;border-radius:8px;border-top:5px solid var(--red);box-shadow:0 6px 24px #0002}
+.card h1{font-size:26px;margin-bottom:6px}
+.card>p{color:#666;margin-bottom:18px}
+label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+input,select{width:100%;padding:11px;border:1px solid #ccc;border-radius:4px;font-size:15px;font-family:inherit}
+input:focus{outline:2px solid var(--red);border-color:var(--red)}
+.chk{display:flex;gap:8px;align-items:center;margin:14px 0;font-size:14px}
+.chk input{width:auto}
+.card .btn{width:100%;margin-top:8px}
+.role{display:block;border:2px solid var(--line);border-radius:8px;padding:18px;margin-bottom:14px}
+.role:hover{border-color:var(--red)}
+.role b{font-size:18px;display:block}
+.role span{color:#666;font-size:14px}
+.or{text-align:center;color:#888;margin:14px 0}
+.msg{color:var(--red);font-size:14px;margin-top:8px;min-height:18px}
+.alt{text-align:center;margin-top:16px;font-size:14px}.alt a{color:var(--red);font-weight:600}
+@media(max-width:800px){.split{grid-template-columns:1fr}.side{display:none}}

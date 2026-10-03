@@ -1,0 +1,12 @@
+require('dotenv').config();
+const express=require('express'),cors=require('cors'),rate=require('express-rate-limit');
+['JWT_SECRET','ENC_KEY','HMAC_KEY','DB_PASSWORD'].forEach(k=>{if(!process.env[k])console.warn(`WARNING: ${k} is not set in .env`)});
+const app=express(),lim=n=>rate({windowMs:60000,max:n});
+app.set('trust proxy',1);
+app.use(cors({origin:process.env.CORS_ORIGIN||'http://127.0.0.1:5500'}));
+app.use(express.json({limit:'100kb'}));
+app.use('/api/otp',lim(10));app.use('/api/kra',lim(20));app.use('/api/auth',lim(20));
+app.use('/api',require('./routes/auth'),require('./routes/kra'),require('./routes/merchant'),require('./routes/buyer'));
+app.use('/api/pay',require('./routes/pay'));
+const port=process.env.PORT||5000;
+app.listen(port,()=>console.log('API running on port '+port));

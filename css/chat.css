@@ -1,0 +1,16 @@
+.chat-launch{position:fixed;right:24px;bottom:24px;width:58px;height:58px;border-radius:50%;background:var(--red);color:#fff;border:0;font-size:26px;cursor:pointer;box-shadow:0 4px 14px #0005;z-index:90}
+.chat-panel{position:fixed;right:24px;bottom:94px;width:360px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 120px);background:#fff;border-radius:18px;box-shadow:0 10px 40px #0006;display:flex;flex-direction:column;overflow:hidden;z-index:90;transform:translateY(30px);opacity:0;pointer-events:none;transition:.25s}
+.chat-panel.open{transform:none;opacity:1;pointer-events:auto}
+.chat-head{background:var(--red);color:#fff;padding:20px;position:relative}
+.chat-head h3{font-size:26px;margin-top:22px;line-height:1.2}
+#chatX{position:absolute;right:16px;top:14px;background:none;border:0;color:#fff;font-size:20px;cursor:pointer}
+.chat-body{flex:1;overflow:auto;padding:16px;background:var(--soft)}
+.tab{display:none}.tab.on{display:block}
+.cbox{background:#fff;border-radius:10px;padding:6px 14px;margin-bottom:12px;box-shadow:0 1px 4px #0002}
+.cbox a,.cbox li{display:block;padding:10px 0;border-bottom:1px solid var(--line);list-style:none;font-size:15px}
+.cbox :last-child{border:0}
+.cbox.big a{font-weight:700;color:var(--red)}
+.tab input{margin-bottom:12px;width:100%;padding:10px;border:1px solid #ccc;border-radius:6px}
+.chat-tabs{display:flex;border-top:1px solid var(--line)}
+.chat-tabs button{flex:1;background:#fff;border:0;padding:10px;cursor:pointer;font-size:13px;color:#666}
+.chat-tabs button.on{color:var(--red);font-weight:700}

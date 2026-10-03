@@ -1,0 +1,20 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Merchant registration</title><link rel="stylesheet" href="css/global.css"><link rel="stylesheet" href="css/form.css"></head><body class="fp bg7">
+<header class="nav"><div class="bar"><a class="brand" href="index.html"><span class="logo">e</span>eTIMS AutoInvoice</a><nav class="links"><a href="index.html#home">Home</a><a href="index.html#explore">Explore</a><a href="index.html#features">Features</a><a href="index.html#contact">Contact</a></nav><div class="acts"><a class="btn btn-out" href="log.html">Login</a><a class="btn btn-dark" href="sign.html">Register</a></div></div></header>
+<div class="fcard"><div class="fhead"><a class="back" href="sign.html" aria-label="Back">←</a><div><h1>Create your merchant account</h1><p>Set up your business to issue eTIMS invoices from M-Pesa payments.</p></div></div>
+<div class="flowbar"><span class="on">1 Account details</span><span>2 Connect your business</span><span>3 Finish</span></div>
+<form id="f" novalidate>
+<div class="stp first"><i>1</i>Account details</div>
+<label>Owner's full name</label><div class="f"><input id="fullname" class="i-user" placeholder="Owner's name"></div>
+<label>Mobile number</label><div class="f bi"><input id="phone" class="i-phone" placeholder="07XX XXX XXX" inputmode="tel"><button type="button" class="btn btn-red inl" id="sendOtp">Send OTP</button></div>
+<div id="otpBox" class="otpbox hide"><label>Enter the 6-digit code sent to <span id="sentTo"></span></label><div class="otp"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div><button type="button" class="btn btn-red cta" id="verify">Verify phone number</button><p class="alt">Didn't get it? <a href="#" id="resend">Resend OTP</a></p></div><p class="ok hide" id="pOk">✓ Phone verified</p>
+<label>Email address</label><div class="f"><input id="email" type="email" class="i-mail" placeholder="owner@business.co.ke"></div>
+<div class="stp"><i>2</i>Your business</div>
+<div class="biz" id="bizOff"><p>Connect your KRA PIN and M-Pesa so we can issue eTIMS invoices from your payments. You will come back here to finish.</p><br><a class="btn btn-red cta" id="bizBtn" href="merchant_onboarding.html">Connect your business</a></div>
+<div class="biz on hide" id="bizOn"><div id="bz"></div><br><a class="btn" href="merchant_onboarding.html" id="bizEdit" onclick="persist()">Edit business details</a></div>
+<div id="fin" class="hide"><div class="stp"><i>3</i>Finish registration</div>
+<div class="row"><div><label>Password</label><div class="f"><input id="password" type="password" class="i-lock" placeholder="Create password"></div></div><div><label>Confirm password</label><div class="f"><input id="confirm" type="password" class="i-lock" placeholder="Re-enter password"></div></div></div>
+<label class="chk"><input id="consent" type="checkbox"><span>I agree to the Terms, Privacy Policy and data-processing consent, including verification of my business with KRA.</span></label>
+<button class="btn btn-red cta" id="create">Create merchant account</button></div>
+<p class="msg" id="msg"></p></form>
+<p class="alt">Already registered? <a href="log.html">Sign in</a></p></div>
+<script src="js/api.js"></script><script src="js/merchant-signup.js"></script></body></html>

@@ -1,0 +1,14 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in</title><link rel="stylesheet" href="css/global.css"><link rel="stylesheet" href="css/form.css"></head><body class="lpage">
+<header class="nav"><div class="bar"><a class="brand" href="index.html"><span class="logo">e</span>eTIMS AutoInvoice</a><nav class="links"><a href="index.html#home">Home</a><a href="index.html#explore">Explore</a><a href="index.html#features">Features</a><a href="index.html#contact">Contact</a></nav><div class="acts"><a class="btn btn-out" href="log.html">Login</a><a class="btn btn-dark" href="sign.html">Register</a></div></div></header>
+<div class="lbox"><div class="lpic"><h2>Payments in. Invoices out.</h2><p>M-Pesa to KRA eTIMS to a digital receipt, automatically.</p></div>
+<div class="lform"><h1>Sign in</h1><p class="sub">Enter your credentials to continue</p>
+<div class="tabs"><button type="button" class="on" data-m="pw">Password</button><button type="button" data-m="otp">Phone OTP</button></div>
+<form id="pwForm"><label>Email or phone</label><div class="f"><input name="ident" class="i-user" required></div>
+<label>Password</label><div class="f"><input name="password" type="password" class="i-lock" required></div>
+<button class="btn btn-red cta" style="margin-top:18px">Sign in</button></form>
+<form id="otpForm" class="hide"><label>Phone number</label><div class="f"><input id="op" class="i-phone" placeholder="0712 345 678" required></div>
+<button type="button" class="btn btn-out cta" id="osend" style="margin-top:14px">Send OTP</button>
+<div id="ocode" class="hide"><label>6-digit code</label><div class="f"><input id="oc" class="i-lock" maxlength="6" inputmode="numeric"></div><button class="btn btn-red cta" style="margin-top:14px">Verify and sign in</button></div></form>
+<p class="msg" id="msg"></p><p class="or">or</p><button class="btn btn-out cta" type="button">Continue with Google</button>
+<p class="alt">Don't have an account? <a href="sign.html">Sign up</a></p></div></div>
+<script src="js/api.js"></script><script src="js/login.js"></script></body></html>
