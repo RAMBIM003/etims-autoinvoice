@@ -1,10 +1,122 @@
-// Talks to the Node backend in /backend. No sample data lives here.
-const API={BASE:'http://localhost:5000/api',
- norm:v=>{v=String(v).replace(/[\s+]/g,'');return v.startsWith('0')?'254'+v.slice(1):v},
- phoneOk(v){return /^254[17]\d{8}$/.test(this.norm(v))},
- async req(path,opt={}){let r;opt.headers={...(opt.headers||{})};
-  if(localStorage.token)opt.headers.Authorization='Bearer '+localStorage.token;
-  try{r=await fetch(this.BASE+path,opt)}catch{throw new Error('Cannot reach the server. Start the API (npm start in /backend) and open this site through Live Server.')}
-  const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Request failed');return j},
- post(path,body){return this.req(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})},
- async get(path){try{return await this.req(path)}catch{return null}}};
+﻿const API = {
+    BASE: 'http://localhost:5000/api',
+
+    async req(path, options = {}) {
+        const requestOptions = {
+            ...options,
+            headers: { ...(options.headers || {}) }
+        };
+
+        if (localStorage.token) {
+            requestOptions.headers.Authorization =
+                'Bearer ' + localStorage.token;
+        }
+
+        let response;
+
+        try {
+            response = await fetch(this.BASE + path, requestOptions);
+        } catch {
+            throw new Error(
+                'Cannot reach the API. Start the backend with npm start.'
+            );
+        }
+
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+            localStorage.removeItem('token');
+            location.href = '/sign_merchant.html';
+            throw new Error('Your session has expired.');
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                data.error ||
+                data.message ||
+                data.ResultDesc ||
+                `Request failed (${response.status})`
+            );
+        }
+
+        return data;
+    },
+
+    get(path) {
+        return this.req(path);
+    },
+
+    post(path, body) {
+        return this.req(path, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body || {})
+        });
+    },
+
+    put(path, body) {
+        return this.req(path, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body || {})
+        });
+    },
+
+    delete(path) {
+        return this.req(path, { method: 'DELETE' });
+    },
+
+    me() {
+        return this.get('/auth/me');
+    },
+
+    dashboard() {
+        return this.get('/dashboard');
+    },
+
+    items() {
+        return this.get('/items');
+    },
+
+    createItem(body) {
+        return this.post('/items', body);
+    },
+
+    sales() {
+        return this.get('/sales');
+    },
+
+    createSale(body) {
+        return this.post('/sales', body);
+    },
+
+    payments() {
+        return this.get('/payments');
+    },
+
+    invoices() {
+        return this.get('/invoices');
+    },
+
+    // connections.js is mounted at /api.
+    connections() {
+        return this.get('/');
+    },
+
+    checkKra(pin) {
+        return this.post('/kra/check', { kra_pin: pin });
+    },
+
+    registerMpesa(shortcode) {
+        return this.post('/mpesa/register', { shortcode });
+    },
+
+    fiscalizeSale(saleId) {
+        return this.post(
+            `/kra/fiscalize/${encodeURIComponent(saleId)}`,
+            {}
+        );
+    }
+};
+
+window.API = API;

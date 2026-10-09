@@ -1,0 +1,16 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Buyer registration</title><link rel="stylesheet" href="css/global.css"><link rel="stylesheet" href="css/form.css"></head><body class="fp bg5">
+<header class="nav"><div class="bar"><a class="brand" href="index.html"><span class="logo">e</span>eTIMS AutoInvoice</a><nav class="links"><a href="index.html#home">Home</a><a href="index.html#explore">Explore</a><a href="index.html#features">Features</a><a href="index.html#contact">Contact</a></nav><div class="acts"><a class="btn btn-out" href="log.html">Login</a><a class="btn btn-dark" href="sign.html">Register</a></div></div></header>
+<div class="fcard"><div class="fhead"><a class="back" href="sign.html" aria-label="Back">←</a><div><h1>Create your buyer account</h1><p>Your receipts, all in one place.</p></div></div>
+<form id="f" novalidate>
+<label>Mobile number</label><div class="f bi"><input id="phone" class="i-phone" placeholder="07XX XXX XXX" inputmode="tel"><button type="button" class="btn btn-red inl" id="sendOtp">Send OTP</button></div>
+<div id="otpBox" class="otpbox hide"><label>Enter the 6-digit code sent to <span id="sentTo"></span></label><div class="otp"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div><button type="button" class="btn btn-red cta" id="verify">Verify phone number</button><p class="alt">Didn't get it? <a href="#" id="resend">Resend OTP</a></p></div><p class="ok hide" id="pOk">✓ Phone verified</p>
+<label>KRA PIN</label><div class="f bi"><input id="pin" class="i-id" placeholder="Enter your KRA PIN" maxlength="11"><button type="button" class="btn btn-red inl" id="connect" disabled>Connect PIN</button></div>
+<div id="kra" class="kra hide"><b>✓ KRA PIN verified</b><dl class="pf"><dt>PIN</dt><dd id="k_pin"></dd><dt>Name</dt><dd id="k_name"></dd><dt>Taxpayer type</dt><dd id="k_type"></dd><dt>PIN status</dt><dd>● <span id="k_status"></span></dd></dl></div>
+<label class="chk"><input id="consent" type="checkbox"><span>I agree to share my phone number and KRA PIN with eTIMS AutoInvoice so merchants can add my PIN to invoices and my eTIMS receipts are sent to this phone. I can unlink my details at any time.</span></label>
+<div id="sec" class="hide"><div class="stp"><i>✓</i>Account security</div>
+<label>Email (optional)</label><div class="f"><input id="email" type="email" class="i-mail" placeholder="you@example.com"></div>
+<div class="row"><div><label>Password</label><div class="f"><input id="password" type="password" class="i-lock" placeholder="Create password"></div></div><div><label>Confirm password</label><div class="f"><input id="confirm" type="password" class="i-lock" placeholder="Re-enter password"></div></div></div>
+<button class="btn btn-red cta" id="create" style="margin-top:18px">Create buyer account</button></div>
+<p class="msg" id="msg"></p></form>
+<p class="alt">Already have an account? <a href="log.html">Sign in</a></p></div>
+<script src="js/api.js"></script><script src="js/buyer-signup.js"></script></body></html>

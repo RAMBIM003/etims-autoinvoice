@@ -39,3 +39,4 @@ r.get('/auth/me',auth,wrap(async(q,s)=>{
  if(b){out.buyer=b;out.phones=(await db.query("SELECT phone_encrypted FROM buyer_phones WHERE buyer_id=$1 AND status='ACTIVE'",[b.id])).rows.map(x=>C.mask(C.dec(x.phone_encrypted)))}
  s.json(out)}));
 module.exports=r;
+

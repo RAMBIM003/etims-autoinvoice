@@ -1,0 +1,932 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Merchant Dashboard | Masterclass eTIMS AutoInvoice</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<style>
+:root{
+ --ink:#111214;
+ --muted:#73777f;
+ --line:#e6e7e9;
+ --soft:#f6f7f8;
+ --red:#d71920;
+ --green:#16845a;
+ --amber:#9b6700;
+ --white:#fff;
+}
+
+*{box-sizing:border-box}
+
+body{
+ margin:0;
+ background:#f7f7f8;
+ color:var(--ink);
+ font-family:Inter,Arial,sans-serif;
+}
+
+button,input{font:inherit}
+
+.app{
+ min-height:100vh;
+ display:flex;
+}
+
+.sidebar{
+ width:250px;
+ position:fixed;
+ inset:0 auto 0 0;
+ background:#101114;
+ color:#fff;
+ padding:22px 15px;
+ display:flex;
+ flex-direction:column;
+ z-index:10;
+}
+
+.brand{
+ display:flex;
+ gap:11px;
+ align-items:center;
+ padding:0 10px 25px;
+}
+
+.brand-mark{
+ width:35px;
+ height:35px;
+ border-radius:10px;
+ background:var(--red);
+ display:grid;
+ place-items:center;
+ font-weight:800;
+}
+
+.brand strong{font-size:15px}
+
+.brand small{
+ display:block;
+ color:#888b91;
+ font-size:9px;
+ margin-top:3px;
+ letter-spacing:.08em;
+}
+
+.business-card{
+ border:1px solid #2c2e33;
+ background:#17181c;
+ border-radius:11px;
+ padding:13px;
+ margin-bottom:17px;
+}
+
+.business-card label{
+ color:#85888f;
+ display:block;
+ font-size:9px;
+ text-transform:uppercase;
+ letter-spacing:.1em;
+}
+
+.business-card strong{
+ display:block;
+ margin-top:6px;
+ font-size:12px;
+}
+
+.nav{
+ display:grid;
+ gap:4px;
+}
+
+.nav-label{
+ color:#666970;
+ font-size:9px;
+ text-transform:uppercase;
+ letter-spacing:.13em;
+ padding:14px 11px 5px;
+}
+
+.nav button{
+ border:0;
+ background:transparent;
+ color:#b8bac0;
+ border-radius:8px;
+ padding:11px;
+ text-align:left;
+ cursor:pointer;
+ font-size:12px;
+ display:flex;
+ align-items:center;
+ gap:10px;
+ width:100%;
+}
+
+.nav button i{
+ font-size:17px;
+ flex:0 0 17px;
+}
+
+.nav button:hover,
+.nav button.active{
+ background:#222429;
+ color:#fff;
+}
+
+.nav button.active{
+ box-shadow:inset 3px 0 var(--red);
+}
+
+.logout{
+ margin-top:auto;
+ border-top:1px solid #292b30;
+ padding-top:12px;
+}
+
+.logout button{
+ width:100%;
+ border:0;
+ background:transparent;
+ color:#aaa;
+ text-align:left;
+ padding:11px;
+ cursor:pointer;
+ display:flex;
+ align-items:center;
+ gap:10px;
+ font-size:12px;
+}
+
+.logout i{font-size:17px}
+
+.main{
+ margin-left:250px;
+ width:calc(100% - 250px);
+}
+
+.topbar{
+ height:70px;
+ background:#fff;
+ border-bottom:1px solid var(--line);
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:0 30px;
+ position:sticky;
+ top:0;
+ z-index:5;
+}
+
+.crumb{
+ color:var(--muted);
+ font-size:12px;
+}
+
+.crumb strong{color:var(--ink)}
+
+.top-right{
+ display:flex;
+ align-items:center;
+ gap:18px;
+}
+
+.connection-mini{
+ font-size:10px;
+ display:flex;
+ align-items:center;
+ gap:7px;
+}
+
+.dot{
+ width:7px;
+ height:7px;
+ border-radius:50%;
+ display:inline-block;
+ background:#aaa;
+}
+
+.dot.online{background:var(--green)}
+.dot.offline{background:#aaa}
+
+.avatar{
+ width:34px;
+ height:34px;
+ border-radius:50%;
+ background:#ececee;
+ display:grid;
+ place-items:center;
+ font-size:11px;
+ font-weight:700;
+}
+
+.content{
+ max-width:1450px;
+ padding:28px 30px 50px;
+}
+
+.hero{
+ display:flex;
+ justify-content:space-between;
+ align-items:end;
+ margin-bottom:22px;
+}
+
+.hero h1{
+ font-size:27px;
+ margin:0 0 5px;
+ letter-spacing:-.04em;
+}
+
+.hero p{
+ margin:0;
+ color:var(--muted);
+ font-size:12px;
+}
+
+.actions{
+ display:flex;
+ gap:8px;
+}
+
+.btn{
+ border:1px solid var(--line);
+ background:#fff;
+ border-radius:8px;
+ padding:9px 13px;
+ font-size:11px;
+ font-weight:600;
+ cursor:pointer;
+ display:inline-flex;
+ align-items:center;
+ gap:7px;
+}
+
+.btn.primary{
+ background:var(--red);
+ color:#fff;
+ border-color:var(--red);
+}
+
+.error{
+ background:#fff1f1;
+ color:#a20e14;
+ border:1px solid #f0c4c5;
+ padding:12px 14px;
+ border-radius:9px;
+ font-size:11px;
+ margin-bottom:18px;
+}
+
+.loading{
+ color:var(--muted);
+ font-size:11px;
+ margin-bottom:14px;
+}
+
+.statusbar{
+ display:flex;
+ gap:9px;
+ margin-bottom:20px;
+}
+
+.status{
+ background:#fff;
+ border:1px solid var(--line);
+ border-radius:9px;
+ padding:10px 13px;
+ font-size:10px;
+ display:flex;
+ align-items:center;
+ gap:8px;
+}
+
+.cards{
+ display:grid;
+ grid-template-columns:repeat(4,1fr);
+ gap:13px;
+ margin-bottom:20px;
+}
+
+.card{
+ background:#fff;
+ border:1px solid var(--line);
+ border-radius:11px;
+ padding:17px;
+}
+
+.card-label{
+ color:var(--muted);
+ font-size:10px;
+ margin-bottom:10px;
+}
+
+.metric{
+ font-size:24px;
+ font-weight:800;
+ letter-spacing:-.04em;
+}
+
+.metric-note{
+ margin-top:6px;
+ color:var(--muted);
+ font-size:9px;
+}
+
+.grid{
+ display:grid;
+ grid-template-columns:1fr;
+ gap:17px;
+}
+
+.panel{
+ background:#fff;
+ border:1px solid var(--line);
+ border-radius:11px;
+ overflow:hidden;
+}
+
+.panel-head{
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
+ padding:15px 17px;
+ border-bottom:1px solid var(--line);
+}
+
+.panel-head h2{
+ margin:0;
+ font-size:13px;
+}
+
+.panel-head span{
+ color:var(--muted);
+ font-size:9px;
+}
+
+.table-wrap{overflow:auto}
+
+table{
+ width:100%;
+ border-collapse:collapse;
+ min-width:680px;
+}
+
+th,td{
+ padding:11px 16px;
+ text-align:left;
+ border-bottom:1px solid #f0f0f1;
+ font-size:10px;
+}
+
+th{
+ background:#fafafa;
+ color:#85888f;
+ font-size:8px;
+ text-transform:uppercase;
+ letter-spacing:.08em;
+}
+
+.mono{
+ font-family:"JetBrains Mono",monospace;
+}
+
+.empty{
+ text-align:center;
+ padding:32px!important;
+ color:var(--muted);
+}
+
+.pill{
+ display:inline-block;
+ padding:4px 7px;
+ border-radius:99px;
+ font-size:8px;
+ font-weight:700;
+ text-transform:capitalize;
+}
+
+.pill.green{
+ background:#e8f6ef;
+ color:#17734e;
+}
+
+.pill.amber{
+ background:#fff3d9;
+ color:#8a5b00;
+}
+
+.pill.gray{
+ background:#f0f1f2;
+ color:#64676d;
+}
+
+.profile-grid{
+ display:grid;
+ grid-template-columns:repeat(3,1fr);
+ gap:12px;
+}
+
+.profile-box{
+ border:1px solid var(--line);
+ border-radius:9px;
+ padding:14px;
+}
+
+.profile-box label{
+ display:block;
+ color:var(--muted);
+ font-size:9px;
+ margin-bottom:6px;
+}
+
+.profile-box strong{font-size:12px}
+
+.footer{
+ margin-top:25px;
+ color:#9a9ca1;
+ font-size:9px;
+}
+
+@media(max-width:1000px){
+ .cards{grid-template-columns:repeat(2,1fr)}
+ .sidebar{width:215px}
+ .main{
+  margin-left:215px;
+  width:calc(100% - 215px);
+ }
+ .profile-grid{grid-template-columns:1fr}
+}
+
+@media(max-width:700px){
+ .app{display:block}
+ .sidebar{
+  position:static;
+  width:100%;
+  min-height:auto;
+ }
+ .main{
+  margin:0;
+  width:100%;
+ }
+ .cards{grid-template-columns:1fr 1fr}
+ .hero{display:block}
+ .actions{margin-top:14px}
+ .statusbar{flex-wrap:wrap}
+ .topbar{padding:0 16px}
+ .content{padding:18px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+<aside class="sidebar">
+
+  <div class="brand">
+    <div class="brand-mark">M</div>
+    <div>
+      <strong>MASTERCLASS</strong>
+      <small>eTIMS AUTOINVOICE</small>
+    </div>
+  </div>
+
+  <div class="business-card">
+    <label>Business</label>
+    <strong id="business-name">Loading...</strong>
+  </div>
+
+  <nav class="nav">
+
+    <div class="nav-label">Workspace</div>
+
+    <button class="active" data-section="dashboard">
+      <i class="ph ph-squares-four"></i>
+      <span>Dashboard</span>
+    </button>
+
+    <button data-section="items">
+      <i class="ph ph-package"></i>
+      <span>Items</span>
+    </button>
+
+    <button data-section="orders">
+      <i class="ph ph-shopping-cart-simple"></i>
+      <span>Orders</span>
+    </button>
+
+    <button data-section="payments">
+      <i class="ph ph-credit-card"></i>
+      <span>Payments</span>
+    </button>
+
+    <button data-section="invoices">
+      <i class="ph ph-receipt"></i>
+      <span>Invoices</span>
+    </button>
+
+    <div class="nav-label">Business</div>
+
+    <button data-section="branches">
+      <i class="ph ph-buildings"></i>
+      <span>Branches</span>
+    </button>
+
+    <button data-section="profile">
+      <i class="ph ph-storefront"></i>
+      <span>Business Profile</span>
+    </button>
+
+  </nav>
+
+  <div class="logout">
+    <button id="logout-button">
+      <i class="ph ph-sign-out"></i>
+      <span>Sign out</span>
+    </button>
+  </div>
+
+</aside>
+
+<main class="main">
+
+<header class="topbar">
+
+  <div class="crumb">
+    Merchant / <strong>Dashboard</strong>
+  </div>
+
+  <div class="top-right">
+
+    <div class="connection-mini">
+      <span class="dot" id="kra-status"></span>
+      KRA eTIMS
+    </div>
+
+    <div class="connection-mini">
+      <span class="dot" id="mpesa-status"></span>
+      M-Pesa
+    </div>
+
+    <div class="avatar">M</div>
+
+  </div>
+
+</header>
+
+<section class="content">
+
+  <div id="dashboard-error" class="error" hidden></div>
+
+  <div id="dashboard-loading" class="loading">
+    Loading live business data...
+  </div>
+
+  <div class="hero">
+
+    <div>
+      <h1>Merchant Dashboard</h1>
+      <p>Live data from your Masterclass eTIMS AutoInvoice account.</p>
+    </div>
+
+    <div class="actions">
+
+      <button class="btn" onclick="Dashboard.load()">
+        <i class="ph ph-arrow-clockwise"></i>
+        Refresh
+      </button>
+
+      <button class="btn primary" onclick="location.hash='orders'">
+        <i class="ph ph-plus"></i>
+        Create Order
+      </button>
+
+    </div>
+
+  </div>
+
+  <div class="statusbar">
+
+    <div class="status">
+      <span class="dot" id="kra-status"></span>
+      KRA eTIMS
+    </div>
+
+    <div class="status">
+      <span class="dot" id="mpesa-status"></span>
+      M-Pesa
+    </div>
+
+    <div class="status">
+      Branches:
+      <strong id="stat-branches">0</strong>
+    </div>
+
+  </div>
+
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-label">Today's sales</div>
+      <div class="metric" id="stat-sales">0</div>
+      <div class="metric-note">Closed sales today</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Matched payments</div>
+      <div class="metric" id="stat-payments">0</div>
+      <div class="metric-note">M-Pesa payments matched to orders</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Orders</div>
+      <div class="metric" id="stat-orders">0</div>
+      <div class="metric-note">Orders recorded in the system</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Fiscalized invoices</div>
+      <div class="metric" id="stat-invoices">0</div>
+      <div class="metric-note">KRA eTIMS fiscalized invoices</div>
+    </div>
+
+  </div>
+
+  <div class="cards">
+
+    <div class="card">
+      <div class="card-label">Catalogue items</div>
+      <div class="metric" id="stat-items">0</div>
+      <div class="metric-note">Active merchant items</div>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Unmatched payments</div>
+      <div class="metric" id="stat-unmatched">0</div>
+      <div class="metric-note">Payments requiring reconciliation</div>
+    </div>
+
+  </div>
+
+  <div class="grid">
+
+    <section class="panel">
+
+      <div class="panel-head">
+        <h2>Recent Orders</h2>
+        <span>Live database records</span>
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Order</th>
+              <th>Customer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Created</th>
+            </tr>
+          </thead>
+
+          <tbody id="orders-body">
+            <tr>
+              <td colspan="5" class="empty">Loading...</td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <section class="panel">
+
+      <div class="panel-head">
+        <h2>Recent M-Pesa Payments</h2>
+        <span>Daraja confirmation records</span>
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Transaction</th>
+              <th>Payer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Paid</th>
+            </tr>
+          </thead>
+
+          <tbody id="payments-body">
+            <tr>
+              <td colspan="5" class="empty">Loading...</td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <section class="panel">
+
+      <div class="panel-head">
+        <h2>Invoices</h2>
+        <span>KRA fiscalization records</span>
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Invoice</th>
+              <th>Buyer</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>KRA Receipt</th>
+            </tr>
+          </thead>
+
+          <tbody id="invoices-body">
+            <tr>
+              <td colspan="5" class="empty">Loading...</td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <section class="panel">
+
+      <div class="panel-head">
+        <h2>Branches</h2>
+        <span>Merchant branches</span>
+      </div>
+
+      <div class="table-wrap">
+
+        <table>
+
+          <thead>
+            <tr>
+              <th>Branch</th>
+              <th>Branch ID</th>
+              <th>Address</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+
+          <tbody id="branches-body">
+            <tr>
+              <td colspan="4" class="empty">Loading...</td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+    <section class="panel">
+
+      <div class="panel-head">
+        <h2>Business Profile</h2>
+        <span>Authenticated merchant</span>
+      </div>
+
+      <div style="padding:17px">
+
+        <div class="profile-grid">
+
+          <div class="profile-box">
+            <label>Business</label>
+            <strong id="merchant-name">Loading...</strong>
+          </div>
+
+          <div class="profile-box">
+            <label>KRA PIN</label>
+            <strong id="merchant-pin">Loading...</strong>
+          </div>
+
+          <div class="profile-box">
+            <label>Account</label>
+            <strong>Authenticated merchant</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="footer">
+    Masterclass eTIMS AutoInvoice — Live merchant data is retrieved from the application database.
+  </div>
+
+</section>
+
+</main>
+
+</div>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/dash.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    window.location.href = '/sign_merchant.html';
+    return;
+  }
+
+  document
+    .getElementById('logout-button')
+    .addEventListener('click', () => {
+      localStorage.removeItem('token');
+      window.location.href = '/sign_merchant.html';
+    });
+
+  document
+    .querySelectorAll('[data-section]')
+    .forEach(button => {
+
+      button.addEventListener('click', () => {
+
+        document
+          .querySelectorAll('[data-section]')
+          .forEach(x => x.classList.remove('active'));
+
+        button.classList.add('active');
+
+        const section = button.dataset.section;
+
+        const headings = {
+          dashboard: 'Dashboard',
+          items: 'Items',
+          orders: 'Orders',
+          payments: 'Payments',
+          invoices: 'Invoices',
+          branches: 'Branches',
+          profile: 'Business Profile'
+        };
+
+        document.querySelector('.crumb strong').textContent =
+          headings[section] || 'Dashboard';
+
+        const targets = {
+          dashboard: '.hero',
+          items: '#stat-items',
+          orders: '#orders-body',
+          payments: '#payments-body',
+          invoices: '#invoices-body',
+          branches: '#branches-body',
+          profile: '#merchant-name'
+        };
+
+        const target =
+          document.querySelector(targets[section] || '.hero');
+
+        if (target) {
+          target.scrollIntoView({
+            behavior:'smooth',
+            block:'start'
+          });
+        }
+
+      });
+
+    });
+
+});
+</script>
+
+</body>
+</html>

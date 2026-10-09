@@ -1,23 +1,65 @@
-const $=i=>document.getElementById(i),hide=(i,h)=>$(i).classList.toggle('hide',h),say=t=>$('msg').textContent=t||'';
-const d0=JSON.parse(sessionStorage.mdraft||'{}'),b0=d0.business||{};
-let kra=b0.kraName?{pin:b0.pin,name:b0.kraName,type:b0.kraType,status:b0.kraStatus,oscu:b0.oscu||{}}:null;
-const show=()=>{['pin','name','type','status'].forEach(k=>$('k_'+k).textContent=kra[k]);
- $('k_oscu').innerHTML=kra.oscu&&kra.oscu.connected?'<span class="px ok">KRA eTIMS connected</span>':`<span class="px no">Not connected</span> ${kra.oscu&&kra.oscu.message?kra.oscu.message.replace(/[<>&]/g,''):''}`;
- hide('kra',false);hide('connect',true);$('pin').readOnly=true};
-['biz','pin','bphone','btype','paybill','till'].forEach(k=>{const v={biz:b0.tradingName,pin:b0.pin,bphone:b0.phone,btype:b0.type,paybill:b0.paybill,till:b0.till}[k];if(v)$(k).value=v});
-if(kra)show();else $('connect').disabled=!/^[AP]\d{9}[A-Z]$/i.test($('pin').value.trim());
-$('pin').oninput=()=>$('connect').disabled=!/^[AP]\d{9}[A-Z]$/i.test($('pin').value.trim());
-$('connect').onclick=async()=>{say();$('connect').disabled=true;
- try{const r=await API.post('/kra/connect',{pin:$('pin').value.trim()});
-  if(r.status!=='Active'){$('connect').disabled=false;return say(`This PIN is ${r.status}. Only an active PIN can be used.`)}
-  kra=r;show()}catch(e){$('connect').disabled=false;say(e.message)}};
-$('f').onsubmit=e=>{e.preventDefault();const v=i=>$(i).value.trim();
- if(!v('biz'))return say('Enter the trading / business name.');
- if(!kra)return say('Connect your KRA PIN first.');
- if(!API.phoneOk(v('bphone')))return say('Enter a valid business phone number.');
- if(!v('btype'))return say('Select the business type.');
- const ok=x=>/^\d{5,7}$/.test(x);
- if((v('paybill')&&!ok(v('paybill')))||(v('till')&&!ok(v('till'))))return say('Paybill and Till numbers are 5 to 7 digits.');
- if(!ok(v('paybill'))&&!ok(v('till')))return say('Enter a Paybill or a Till number.');
- sessionStorage.mdraft=JSON.stringify({...d0,business:{tradingName:v('biz'),pin:kra.pin,kraName:kra.name,kraType:kra.type,kraStatus:kra.status,oscu:kra.oscu,phone:v('bphone'),type:v('btype'),paybill:v('paybill'),till:v('till')}});
- location='sign_merchant.html'};
+﻿const $=i=>document.getElementById(i);
+const say=t=>$('msg').textContent=t||'';
+
+const d0=JSON.parse(sessionStorage.mdraft||'{}');
+const b0=d0.business||{};
+
+['biz','pin','bphone','btype','paybill','till'].forEach(k=>{
+  const v={
+    biz:b0.tradingName,
+    pin:b0.pin,
+    bphone:b0.phone,
+    btype:b0.type,
+    paybill:b0.paybill,
+    till:b0.till
+  }[k];
+
+  if(v && $(k)) $(k).value=v;
+});
+
+$('f').onsubmit=e=>{
+  e.preventDefault();
+
+  const v=i=>$(i).value.trim();
+
+  if(!v('biz'))
+    return say('Enter the trading / business name.');
+
+  const pin=v('pin').toUpperCase();
+
+  if(!/^[AP]\d{9}[A-Z]$/.test(pin))
+    return say('Enter a valid KRA PIN.');
+
+  if(!API.phoneOk(v('bphone')))
+    return say('Enter a valid business phone number.');
+
+  if(!v('btype'))
+    return say('Select the business type.');
+
+  const ok=x=>/^\d{5,7}$/.test(x);
+
+  if(
+    (v('paybill')&&!ok(v('paybill'))) ||
+    (v('till')&&!ok(v('till')))
+  )
+    return say('Paybill and Till numbers are 5 to 7 digits.');
+
+  if(!ok(v('paybill'))&&!ok(v('till')))
+    return say('Enter a Paybill or a Till number.');
+
+  sessionStorage.mdraft=JSON.stringify({
+    ...d0,
+    business:{
+      tradingName:v('biz'),
+      pin,
+      phone:v('bphone'),
+      type:v('btype'),
+      paybill:v('paybill'),
+      till:v('till')
+    }
+  });
+
+  location='sign_merchant.html';
+};
+
+say('');
