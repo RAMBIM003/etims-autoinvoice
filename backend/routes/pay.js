@@ -1,4 +1,4 @@
-﻿const r = require('express').Router();
+const r = require('express').Router();
 const db = require('../db');
 const mpesa = require('../services/mpesaService');
 const tx = require('../services/transactionService');
@@ -16,6 +16,7 @@ r.post('/c2b/validation', (q, s) => {
 
 r.post('/c2b/confirmation', wrap(async (q, s) => {
     const body = q.body || {};
+    console.log('C2B confirmation received:', JSON.stringify(body));
     const transId = String(body.TransID || '').trim();
     const shortcode = String(body.BusinessShortCode || '').trim();
     const billRef = String(body.BillRefNumber || '').trim();
@@ -245,7 +246,7 @@ r.post('/c2b/confirmation', wrap(async (q, s) => {
 
     if (matchedPaymentId) {
         try {
-            await tx.processMatchedPayment(matchedPaymentId);
+            await tx.processAndFiscalize(matchedPaymentId);
         } catch (error) {
             console.error(
                 'Matched payment processing failed:',

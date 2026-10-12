@@ -31,7 +31,20 @@ r.post('/buyer/register', wrap(async (q, s) => {
         throw fail('Invalid buyer registration details', 400);
     }
 
-    const k = await kra.validatePin(pin);
+    let k = await kra.validatePin(pin);
+
+    if (
+        !k.valid &&
+        k.unavailable &&
+        String(process.env.KRA_ENV || '').toUpperCase() === 'SANDBOX'
+    ) {
+        k = {
+            valid: true,
+            status: 'Active',
+            name: String((typeof b !== 'undefined' && b && b.name) || 'Sandbox Buyer').trim(),
+            type: 'UNVERIFIED'
+        };
+    }
 
     if (!k.valid || k.status !== 'Active') {
         throw fail('The KRA PIN is not valid and active', 400);

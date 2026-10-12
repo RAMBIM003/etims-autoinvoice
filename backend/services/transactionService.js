@@ -1,4 +1,5 @@
-﻿const db = require('../db');
+const db = require('../db');
+const fiscalization = require('./fiscalizationService');
 
 const money = value =>
     Math.round(Number(value || 0) * 100) / 100;
@@ -174,4 +175,22 @@ async function processMatchedPayment(paymentId) {
     });
 }
 
-module.exports = { processMatchedPayment };
+// Creates the invoice, then submits it to KRA in the background so the
+// Daraja callback is acknowledged immediately.
+async function processAndFiscalize(paymentId) {
+    const result = await processMatchedPayment(paymentId);
+
+    if (
+        result &&
+        result.fiscalization_status &&
+        result.fiscalization_status !== 'FISCALIZED'
+    ) {
+        setImmediate(() => {
+            fiscalization.fiscalizeInBackground(result.sale_id);
+        });
+    }
+
+    return result;
+}
+
+module.exports = { processMatchedPayment, processAndFiscalize };
