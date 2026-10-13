@@ -1,4 +1,4 @@
-﻿const App = {
+const App = {
     view: 'dashboard',
     cache: {},
 
@@ -485,7 +485,7 @@
                                 <td class="mono">${this.esc(item.invoice_number)}</td>
                                 <td class="mono">${this.esc(item.sale_id)}</td>
                                 <td>KES ${this.money(item.total_amount)}</td>
-                                <td>${this.pill(item.fiscalization_status)}</td>
+                                <td>${this.pill(item.fiscalization_status)}${item.fiscalization_status === 'FISCALIZED' ? ` <button class="secondary" onclick="App.openReceipt('${item.id}')">View receipt</button>` : ''}</td>
                                 <td>${this.esc(item.kra_receipt_number || '—')}</td>
                             </tr>
                         `).join('')}
@@ -493,6 +493,16 @@
                 </table>
             </section>
         `;
+    },
+
+    async openReceipt(id) {
+        try {
+            const result = await API.get('/receipts/link/' + encodeURIComponent(id));
+            const w = window.open(result.url, '_blank');
+            if (!w) location.href = result.url;
+        } catch (error) {
+            alert(error.message);
+        }
     },
 
     async branches(root) {

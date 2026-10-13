@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>M-Pesa simulator | eTIMS AutoInvoice</title>
+<style>
+    * { box-sizing: border-box; }
+    body { font-family: Inter, Arial, sans-serif; margin: 0; background: #f6f7f9; color: #17191d; }
+    .top { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .top a { font-size: 13px; margin-left: 12px; }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 24px 16px 60px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 16px 0; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h2 { font-size: 16px; margin: 0 0 14px; }
+    .muted { color: #6b7280; font-size: 13px; }
+    label { display: block; font-size: 12px; color: #6b7280; margin: 12px 0 4px; text-transform: uppercase; letter-spacing: .04em; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .modes { display: flex; gap: 18px; margin-top: 6px; font-size: 14px; }
+    .modes label { display: inline; text-transform: none; letter-spacing: 0; color: #17191d; font-size: 14px; margin: 0 0 0 4px; }
+    .primary { background: #c7192e; color: #fff; border: 0; padding: 11px 18px; border-radius: 8px; font-size: 14px; cursor: pointer; margin-top: 16px; }
+    .primary:disabled { opacity: .5; }
+    .notice { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; font-size: 13px; }
+    .error { background: #fef2f2; border: 1px solid #fecaca; color: #b42318; border-radius: 8px; padding: 10px; font-size: 13px; margin-top: 12px; }
+    .ok { background: #ecfdf3; border: 1px solid #abefc6; color: #067647; border-radius: 8px; padding: 10px; font-size: 13px; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    td { padding: 9px 4px; border-bottom: 1px solid #f1f2f4; }
+    td:first-child { color: #6b7280; width: 40%; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; }
+    .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="top">
+    <b>eTIMS AutoInvoice &middot; M-Pesa simulator</b>
+    <div><a href="merchant.html">Merchant</a><a href="buyer.html">Buyer</a></div>
+</div>
+
+<main class="wrap">
+    <h1>M-Pesa C2B simulator</h1>
+    <p class="muted">Sandbox tool. In real life the buyer pays in M-Pesa and Safaricom sends us a callback; this page stands in for that payment. It does not create anything a real callback would not.</p>
+
+    <div class="card" id="gate" hidden></div>
+
+    <form class="card" id="form">
+        <h2>Payment</h2>
+
+        <label>Send via</label>
+        <div class="modes">
+            <span><input type="radio" name="mode" id="mLocal" value="local" checked style="width:auto"><label for="mLocal">This server (local callback)</label></span>
+            <span><input type="radio" name="mode" id="mDaraja" value="daraja" style="width:auto"><label for="mDaraja">Daraja sandbox (real callback through the tunnel)</label></span>
+        </div>
+
+        <label>Open order (optional)</label>
+        <select id="order"><option value="">Enter details manually</option></select>
+
+        <div class="row">
+            <div><label>Paybill / shortcode</label><input id="shortcode" inputmode="numeric" placeholder="600980"></div>
+            <div><label>Account reference (BillRefNumber)</label><input id="reference" maxlength="20" placeholder="ORD-..."></div>
+        </div>
+
+        <div class="row">
+            <div><label>Amount (whole KES)</label><input id="amount" inputmode="numeric" placeholder="580"></div>
+            <div><label>Payer phone (as Safaricom masks it)</label><input id="phone" value="2547 ***** 126"></div>
+        </div>
+
+        <div class="row">
+            <div><label>Payer first name</label><input id="first" value="JOHN"></div>
+            <div><label>Payer last name</label><input id="last" placeholder="optional"></div>
+        </div>
+
+        <div class="muted" style="margin-top:10px">Phone and names apply to the local callback only. Daraja's simulator always uses its own test number, 254708374149.</div>
+
+        <button class="primary" id="send" type="submit">Send payment</button>
+        <div id="msg"></div>
+    </form>
+
+    <section class="card" id="resultCard" hidden>
+        <h2>What happened</h2>
+        <div id="result"></div>
+        <div id="sentBox"></div>
+    </section>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/simulator.js"></script>
+</body>
+</html>

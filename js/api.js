@@ -1,4 +1,4 @@
-﻿const API = {
+const API = {
     BASE: 'http://localhost:5000/api',
 
     async req(path, options = {}) {
@@ -66,6 +66,12 @@
         return this.req(path, { method: 'DELETE' });
     },
 
+    // Accepts 07xx / 01xx numbers (spaces allowed) or +254 / 254 prefixes.
+    phoneOk(value) {
+        const digits = String(value || '').replace(/[\s\-()]/g, '');
+        return /^(?:\+?254|0)[17]\d{8}$/.test(digits);
+    },
+
     me() {
         return this.get('/auth/me');
     },
@@ -98,17 +104,17 @@
         return this.get('/invoices');
     },
 
-    // connections.js is mounted at /api.
+    // connections.js is mounted at /api/connections.
     connections() {
-        return this.get('/');
+        return this.get('/connections');
     },
 
     checkKra(pin) {
-        return this.post('/kra/check', { kra_pin: pin });
+        return this.post('/connections/kra/check', { kra_pin: pin });
     },
 
     registerMpesa(shortcode) {
-        return this.post('/mpesa/register', { shortcode });
+        return this.post('/connections/mpesa/register', { shortcode });
     },
 
     fiscalizeSale(saleId) {

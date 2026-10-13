@@ -18,7 +18,7 @@ $('verify').onclick=async()=>{say();if(code().length<6)return say('Enter the 6-d
 $('pin').oninput=()=>$('connect').disabled=!/^[AP]\d{9}[A-Z]$/i.test($('pin').value.trim());
 $('connect').onclick=async()=>{say();if(!consented())return;$('connect').disabled=true;
  try{const r=await API.post('/kra/validate-pin',{pin:$('pin').value.trim()});
-  if(r.status!=='Active'){$('connect').disabled=false;return say(`This PIN is ${r.status}. Only an active PIN can be linked.`)}
+  if(r.status==='UNAVAILABLE'){r.pin=$('pin').value.trim().toUpperCase();r.name='Not verified (sandbox)';r.type='UNVERIFIED';r.status='UNVERIFIED'}else if(r.status!=='Active'){$('connect').disabled=false;return say(`This PIN is ${r.status}. Only an active PIN can be linked.`)}
   kra=r;['pin','name','type','status'].forEach(k=>$('k_'+k).textContent=r[k]);
   hide('kra',false);hide('connect',true);$('pin').readOnly=true;refresh()}catch(e){$('connect').disabled=false;say(e.message)}};
 $('f').onsubmit=async e=>{e.preventDefault();

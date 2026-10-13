@@ -1,1 +1,86 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Buy | eTIMS AutoInvoice</title><style>body{font-family:Inter,Arial;margin:0;background:#f6f7f9;color:#17191d}.wrap{max-width:1000px;margin:auto;padding:30px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin:15px 0}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.item{border:1px solid #ddd;border-radius:9px;padding:14px}.primary{background:#c7192e;color:#fff;border:0;padding:10px 14px;border-radius:7px}.muted{color:#777}.pill{padding:4px 8px;border-radius:99px;background:#eee;font-size:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}</style></head><body><main class="wrap"><h1>eTIMS AutoInvoice</h1><p class="muted">Buy from a Masterclass merchant, pay by M-Pesa and track your receipt.</p><section class="card"><h2>Choose merchant</h2><select id="merchant" style="padding:10px;width:100%"></select><div id="catalog" class="grid" style="margin-top:15px"></div></section><section class="card"><h2>Your order</h2><div id="cart">Select items above.</div><button class="primary" id="create">Create order</button><div id="result"></div></section></main><script src="js/api.js"></script><script>const B={items:[],async init(){const r=await fetch(API.BASE+'/buyer/merchants');const d=await r.json();const s=document.getElementById('merchant');s.innerHTML=(d.merchants||[]).map(x=>`<option value="${x.id}">${x.trading_name}</option>`).join('');s.onchange=()=>this.load();await this.load()},async load(){const m=document.getElementById('merchant').value;if(!m)return;const r=await fetch(API.BASE+'/buyer/merchants/'+m+'/items');const d=await r.json();this.items=(d.items||[]).map(x=>({...x,qty:0}));document.getElementById('catalog').innerHTML=this.items.map((x,i)=>`<div class="item"><b>${x.name}</b><p>KES ${Number(x.unit_price).toFixed(2)}</p><button onclick="B.add(${i})">Add</button></div>`).join('');this.render()},add(i){this.items[i].qty++;this.render()},render(){const rows=this.items.filter(x=>x.qty);document.getElementById('cart').innerHTML=rows.length?rows.map(x=>`${x.name} × ${x.qty} — KES ${(x.qty*Number(x.unit_price)).toFixed(2)}`).join('<br>'):'Select items above.'},async create(){const items=this.items.filter(x=>x.qty).map(x=>({item_id:x.id,quantity:x.qty}));if(!localStorage.token){document.getElementById('result').innerHTML='<p class="muted">Sign in as a buyer first.</p>';return}const r=await API.post('/buyer/orders',{merchant_id:document.getElementById('merchant').value,items});document.getElementById('result').innerHTML=`<p><b>Order ${r.order.order_reference}</b></p><p>Paybill/Till: ${r.payment.shortcode||'Configured merchant shortcode'}<br>Account reference: <b>${r.payment.reference}</b><br>Amount: <b>KES ${Number(r.payment.amount).toFixed(2)}</b></p>`}};document.getElementById('create').onclick=()=>B.create();B.init();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Buy | eTIMS AutoInvoice</title>
+<style>
+    * { box-sizing: border-box; }
+    body { font-family: Inter, Arial, sans-serif; margin: 0; background: #f6f7f9; color: #17191d; }
+    .top { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
+    .top b { font-size: 16px; }
+    .top a, .top button { margin-left: 10px; font-size: 13px; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; }
+    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 16px 0; }
+    h1 { font-size: 22px; margin: 0 0 4px; }
+    h2 { font-size: 16px; margin: 0 0 14px; }
+    .muted { color: #6b7280; font-size: 13px; }
+    select { padding: 10px; width: 100%; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+    .item { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; }
+    .qty { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .qty button { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; font-size: 16px; cursor: pointer; }
+    .qty span { min-width: 20px; text-align: center; font-weight: 600; }
+    .primary { background: #c7192e; color: #fff; border: 0; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    .primary:disabled { opacity: .5; cursor: not-allowed; }
+    .secondary { background: #fff; border: 1px solid #d1d5db; padding: 8px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
+    .line { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
+    .line.total { font-weight: 700; font-size: 16px; border-top: 1px solid #e5e7eb; margin-top: 6px; padding-top: 8px; }
+    .notice { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; font-size: 13px; margin-top: 12px; }
+    .sandbox { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; font-size: 13px; margin-top: 12px; }
+    .error { background: #fef2f2; border: 1px solid #fecaca; color: #b42318; border-radius: 8px; padding: 10px; font-size: 13px; margin-top: 12px; }
+    .ok { background: #ecfdf3; border: 1px solid #abefc6; color: #067647; border-radius: 8px; padding: 10px; font-size: 13px; margin-top: 12px; }
+    .pay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
+    .pay div { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
+    .pay small { display: block; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+    .pay b { font-size: 16px; word-break: break-all; }
+    .steps { display: flex; gap: 8px; margin: 16px 0 4px; }
+    .step { flex: 1; text-align: center; font-size: 12px; padding: 10px 6px; border-radius: 8px; background: #f3f4f6; color: #6b7280; }
+    .step.done { background: #ecfdf3; color: #067647; font-weight: 600; }
+    .step.active { background: #fff7ed; color: #b54708; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { text-align: left; color: #6b7280; font-size: 11px; text-transform: uppercase; padding: 8px 4px; border-bottom: 1px solid #e5e7eb; }
+    td { padding: 10px 4px; border-bottom: 1px solid #f1f2f4; }
+    .mono { font-family: "JetBrains Mono", Consolas, monospace; }
+    .pill { padding: 3px 9px; border-radius: 99px; background: #eee; font-size: 12px; white-space: nowrap; }
+    .pill.ok2 { background: #ecfdf3; color: #067647; }
+    .pill.warn { background: #fff7ed; color: #b54708; }
+    .pill.bad { background: #fef2f2; color: #b42318; }
+    @media (max-width: 700px) { .grid, .pay { grid-template-columns: 1fr; } .steps { flex-direction: column; } }
+</style>
+</head>
+<body>
+<div class="top">
+    <b>eTIMS AutoInvoice</b>
+    <div id="auth"></div>
+</div>
+
+<main class="wrap">
+    <h1>Buy from a Masterclass merchant</h1>
+    <p class="muted">Pick items, pay by M-Pesa, and get a KRA eTIMS receipt.</p>
+
+    <section class="card">
+        <h2>1. Choose what to buy</h2>
+        <select id="merchant"></select>
+        <div id="catalog" class="grid"></div>
+    </section>
+
+    <section class="card">
+        <h2>2. Your order</h2>
+        <div id="cart" class="muted">Add items above.</div>
+        <div style="margin-top:14px"><button class="primary" id="create" disabled>Create order</button></div>
+        <div id="msg"></div>
+    </section>
+
+    <section class="card" id="payCard" hidden></section>
+
+    <section class="card">
+        <h2>My orders</h2>
+        <div id="orders" class="muted">Sign in to see your orders.</div>
+    </section>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/buyer.js"></script>
+</body>
+</html>

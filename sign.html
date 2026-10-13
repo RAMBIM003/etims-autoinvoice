@@ -1,5 +1,54 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Register</title><link rel="stylesheet" href="css/global.css"><link rel="stylesheet" href="css/form.css"></head><body class="fp bg4"><header class="nav"><div class="bar"><a class="brand" href="index.html"><span class="logo">e</span>eTIMS AutoInvoice</a><nav class="links"><a href="index.html#home">Home</a><a href="index.html#explore">Explore</a><a href="index.html#features">Features</a><a href="index.html#contact">Contact</a></nav><div class="acts"><a class="btn btn-out" href="log.html">Login</a><a class="btn btn-dark" href="sign.html">Register</a></div></div></header>
-<div class="fcard"><div class="fhead"><div><h1>Join eTIMS AutoInvoice</h1><p>What brings you here?</p></div></div>
-<a class="opt" href="sign_buyer.html"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18M16 10a4 4 0 01-8 0"/></svg></div><div><b>I want to receive receipts</b><span>Get your eTIMS fiscal receipts on your phone after M-Pesa payments.</span><em>Link your KRA PIN once and claim input VAT.</em></div><div class="go">›</div></a>
-<a class="opt" href="sign_merchant.html"><div class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3"/></svg></div><div><b>I want to issue invoices</b><span>Sell goods or services and issue eTIMS invoices automatically.</span><em>Every M-Pesa payment becomes a fiscal receipt.</em></div><div class="go">›</div></a>
-<p class="alt">Already have an account? <a href="log.html">Sign in</a></p></div></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Join eTIMS AutoInvoice</title>
+<link rel="stylesheet" href="css/theme.css">
+<style>
+    body{background:radial-gradient(circle at 15% 0,#fde8ea,transparent 38%),radial-gradient(circle at 90% 15%,#dbeafe,transparent 38%),#f3f5fa}
+    .nav2{display:flex;justify-content:space-between;align-items:center;max-width:1100px;margin:22px auto;padding:12px 20px;background:#fff;border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    .logo{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--ink)}
+    .logo i{width:32px;height:32px;border-radius:9px;background:var(--red);color:#fff;display:grid;place-items:center;font-style:normal}
+    .acts a{display:inline-block;padding:9px 16px;border-radius:10px;margin-left:8px;border:1px solid var(--line);color:var(--ink)}
+    .acts a.d{background:var(--ink);color:#fff;border-color:var(--ink)}
+    .wrap{max-width:900px;margin:36px auto;padding:0 16px;text-align:center}
+    .wrap h1{font-size:34px}.roles{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:28px}
+    .role{display:block;background:#fff;border:2px solid transparent;border-radius:22px;padding:32px 26px;text-align:left;color:var(--ink);box-shadow:0 12px 32px rgba(15,23,42,.08);transition:.2s}
+    .role:hover{transform:translateY(-4px);border-color:var(--red)}
+    .role em{font-style:normal;font-size:40px;font-weight:900;letter-spacing:.08em;display:block}
+    .role.b em{color:#2563eb}.role.m em{color:var(--red)}
+    .role small{display:block;letter-spacing:.14em;font-weight:700;margin-top:6px}
+    .role h2{margin:14px 0 6px;font-size:20px}.role p{color:var(--mut);margin:0 0 10px}.role strong{color:var(--red);font-size:13px}
+    .go{display:inline-block;margin-top:18px;background:var(--ink);color:#fff;padding:10px 18px;border-radius:10px;font-weight:600}
+    @media(max-width:760px){.roles{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="nav2">
+    <a class="logo" href="index.html"><i>e</i>eTIMS AutoInvoice</a>
+    <div class="acts"><a href="log.html">Login</a><a class="d" href="sign.html">Register</a></div>
+</div>
+<main class="wrap">
+    <h1>Join eTIMS AutoInvoice</h1>
+    <p class="muted">Choose how you will use the platform.</p>
+    <div class="roles">
+        <a class="role b" href="sign_buyer.html">
+            <em>BUYER</em><small class="muted">I WANT TO...</small>
+            <h2>I want to receive receipts</h2>
+            <p>Get your eTIMS fiscal receipts on your phone after M-Pesa payments.</p>
+            <strong>Link your KRA PIN once and claim input VAT.</strong><br>
+            <span class="go">Register as a buyer &rarr;</span>
+        </a>
+        <a class="role m" href="sign_merchant.html">
+            <em>MERCHANT</em><small class="muted">I WANT TO...</small>
+            <h2>I want to issue invoices</h2>
+            <p>Sell goods or services and issue eTIMS invoices automatically.</p>
+            <strong>Every M-Pesa payment becomes a fiscal receipt.</strong><br>
+            <span class="go">Register as a merchant &rarr;</span>
+        </a>
+    </div>
+    <p class="muted" style="margin-top:26px">Already have an account? <a href="log.html">Sign in</a></p>
+</main>
+</body>
+</html>
