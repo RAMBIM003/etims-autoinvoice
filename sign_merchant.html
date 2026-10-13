@@ -1,20 +1,222 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Merchant registration</title><link rel="stylesheet" href="css/global.css"><link rel="stylesheet" href="css/form.css"></head><body class="fp bg7">
-<header class="nav"><div class="bar"><a class="brand" href="index.html"><span class="logo">e</span>eTIMS AutoInvoice</a><nav class="links"><a href="index.html#home">Home</a><a href="index.html#explore">Explore</a><a href="index.html#features">Features</a><a href="index.html#contact">Contact</a></nav><div class="acts"><a class="btn btn-out" href="log.html">Login</a><a class="btn btn-dark" href="sign.html">Register</a></div></div></header>
-<div class="fcard"><div class="fhead"><a class="back" href="sign.html" aria-label="Back">←</a><div><h1>Create your merchant account</h1><p>Set up your business to issue eTIMS invoices from M-Pesa payments.</p></div></div>
-<div class="flowbar"><span class="on">1 Account details</span><span>2 Connect your business</span><span>3 Finish</span></div>
-<form id="f" novalidate>
-<div class="stp first"><i>1</i>Account details</div>
-<label>Owner's full name</label><div class="f"><input id="fullname" class="i-user" placeholder="Owner's name"></div>
-<label>Mobile number</label><div class="f bi"><input id="phone" class="i-phone" placeholder="07XX XXX XXX" inputmode="tel"><button type="button" class="btn btn-red inl" id="sendOtp">Send OTP</button></div>
-<div id="otpBox" class="otpbox hide"><label>Enter the 6-digit code sent to <span id="sentTo"></span></label><div class="otp"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"></div><button type="button" class="btn btn-red cta" id="verify">Verify phone number</button><p class="alt">Didn't get it? <a href="#" id="resend">Resend OTP</a></p></div><p class="ok hide" id="pOk">✓ Phone verified</p>
-<label>Email address</label><div class="f"><input id="email" type="email" class="i-mail" placeholder="owner@business.co.ke"></div>
-<div class="stp"><i>2</i>Your business</div>
-<div class="biz" id="bizOff"><p>Connect your KRA PIN and M-Pesa so we can issue eTIMS invoices from your payments. You will come back here to finish.</p><br><a class="btn btn-red cta" id="bizBtn" href="merchant_onboarding.html">Connect your business</a></div>
-<div class="biz on hide" id="bizOn"><div id="bz"></div><br><a class="btn" href="merchant_onboarding.html" id="bizEdit" onclick="persist()">Edit business details</a></div>
-<div id="fin" class="hide"><div class="stp"><i>3</i>Finish registration</div>
-<div class="row"><div><label>Password</label><div class="f"><input id="password" type="password" class="i-lock" placeholder="Create password"></div></div><div><label>Confirm password</label><div class="f"><input id="confirm" type="password" class="i-lock" placeholder="Re-enter password"></div></div></div>
-<label class="chk"><input id="consent" type="checkbox"><span>I agree to the Terms, Privacy Policy and data-processing consent, including verification of my business with KRA.</span></label>
-<button class="btn btn-red cta" id="create">Create merchant account</button></div>
-<p class="msg" id="msg"></p></form>
-<p class="alt">Already registered? <a href="log.html">Sign in</a></p></div>
-<script src="js/api.js"></script><script src="js/merchant-signup.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#ffffff">
+    <title>Merchant Registration | eTIMS AutoInvoice</title>
+
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/form.css">
+    <link rel="stylesheet" href="css/signup.css">
+</head>
+
+<body class="fp su signup-page merchant-signup">
+
+    <header class="nav">
+        <div class="bar">
+            <a class="brand" href="index.html">
+                <span class="logo">e</span>
+                <span>eTIMS AutoInvoice</span>
+            </a>
+
+            <nav class="links" aria-label="Main navigation">
+                <a href="index.html#home">Home</a>
+                <a href="index.html#explore">Explore</a>
+                <a href="index.html#features">Features</a>
+                <a href="index.html#contact">Contact</a>
+            </nav>
+
+            <div class="acts">
+                <a class="btn btn-out" href="log.html">Login</a>
+                <a class="btn btn-dark" href="sign.html">Register</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="su-shell">
+        <section class="su-card" aria-labelledby="signup-title">
+
+            <!-- Sidebar: progress stepper (merchant-signup.js sets on/done on these 3 spans) + illustration -->
+            <aside class="su-side">
+                <div class="flowbar" aria-label="Registration progress">
+                    <span class="on"><i>1</i><b>Account details</b></span>
+                    <span><i>2</i><b>Connect your business</b></span>
+                    <span><i>3</i><b>Finish</b></span>
+                </div>
+
+                <svg class="su-art" viewBox="0 0 240 180" aria-hidden="true">
+                    <ellipse cx="112" cy="104" rx="104" ry="68" fill="#e8eefb"/>
+                    <circle cx="150" cy="44" r="42" fill="#fde4e6" opacity=".85"/>
+                    <circle cx="218" cy="50" r="6" fill="#d6e2fa"/>
+                    <rect x="28" y="80" width="96" height="76" rx="5" fill="#fff" stroke="#2f4b8f" stroke-width="4"/>
+                    <rect x="44" y="104" width="40" height="32" rx="3" fill="#4a6fb5"/>
+                    <rect x="56" y="110" width="16" height="16" rx="4" fill="#e11d2e"/>
+                    <text x="64" y="123" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="800" fill="#fff">e</text>
+                    <path d="M20 80l10-40h84l10 40z" fill="#e11d2e" stroke="#2f4b8f" stroke-width="4" stroke-linejoin="round"/>
+                    <path d="M48 42v36M76 42v36M104 42v36" stroke="#fff" stroke-width="9"/>
+                    <rect x="108" y="62" width="76" height="98" rx="8" fill="#fff" stroke="#cfd8ea" stroke-width="3"/>
+                    <rect x="118" y="72" width="14" height="14" rx="4" fill="#e11d2e"/>
+                    <text x="125" y="83" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="#fff">e</text>
+                    <text x="138" y="83" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="#1e2a4a">eTIMS</text>
+                    <rect x="118" y="94" width="56" height="4" rx="2" fill="#d5ddec"/>
+                    <rect x="118" y="104" width="44" height="4" rx="2" fill="#d5ddec"/>
+                    <rect x="118" y="114" width="52" height="4" rx="2" fill="#d5ddec"/>
+                    <path d="M168 118l22 8v16c0 16-10 26-22 32-12-6-22-16-22-32v-16z" fill="#e11d2e" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M158 142l7 7 14-15" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </aside>
+
+            <div class="su-main">
+
+                <div class="fhead">
+                    <a class="back" href="sign.html" aria-label="Back to account selection">←</a>
+                    <div>
+                        <span class="signup-eyebrow">MERCHANT ONBOARDING</span>
+                        <h1 id="signup-title">Create your merchant account</h1>
+                        <p>Set up your business to issue eTIMS invoices from M-Pesa payments.</p>
+                    </div>
+                </div>
+
+                <form id="f" novalidate>
+                    <div class="stp first">
+                        <i>1</i>
+                        Account details
+                    </div>
+
+                    <div class="su-field">
+                        <label for="fullname">Owner's full name</label>
+                        <div class="f">
+                            <input id="fullname" name="fullname" class="i-user"
+                                   placeholder="Owner's full name"
+                                   autocomplete="name">
+                        </div>
+                    </div>
+
+                    <div class="su-field">
+                        <label for="phone">Mobile number</label>
+                        <div class="f bi">
+                            <input id="phone" name="phone" class="i-phone"
+                                   placeholder="07XX XXX XXX"
+                                   inputmode="tel" autocomplete="tel">
+                            <button type="button" class="btn btn-red inl" id="sendOtp">
+                                Send OTP
+                            </button>
+                        </div>
+                        <p class="field-help">Use the mobile number you want associated with this account.</p>
+                    </div>
+
+                    <div id="otpBox" class="otpbox hide">
+                        <label>Enter the 6-digit code sent to <span id="sentTo"></span></label>
+                        <div class="otp">
+                            <input maxlength="1" inputmode="numeric" aria-label="OTP digit 1">
+                            <input maxlength="1" inputmode="numeric" aria-label="OTP digit 2">
+                            <input maxlength="1" inputmode="numeric" aria-label="OTP digit 3">
+                            <input maxlength="1" inputmode="numeric" aria-label="OTP digit 4">
+                            <input maxlength="1" inputmode="numeric" aria-label="OTP digit 5">
+                            <input maxlength="1" inputmode="numeric" aria-label="OTP digit 6">
+                        </div>
+                        <button type="button" class="btn btn-red cta" id="verify">
+                            Verify phone number
+                        </button>
+                        <p class="alt">Didn't get it? <a href="#" id="resend">Resend OTP</a></p>
+                    </div>
+
+                    <p class="ok hide" id="pOk">✓ Phone verified</p>
+
+                    <div class="su-field">
+                        <label for="email">Email address</label>
+                        <div class="f">
+                            <input id="email" name="email" type="email" class="i-mail"
+                                   placeholder="owner@business.co.ke"
+                                   autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="stp">
+                        <i>2</i>
+                        Your business
+                    </div>
+
+                    <div class="biz" id="bizOff">
+                        <div class="business-icon" aria-hidden="true">↗</div>
+                        <h3>Connect your business</h3>
+                        <p>
+                            Connect your KRA PIN and M-Pesa so eTIMS invoices can be
+                            issued for your payments. Your business details will be
+                            saved before you return to finish registration.
+                        </p>
+                        <a class="btn btn-red cta" id="bizBtn" href="merchant_onboarding.html">
+                            Connect your business
+                        </a>
+                    </div>
+
+                    <div class="biz on hide" id="bizOn">
+                        <div class="business-connected">
+                            <span class="business-icon" aria-hidden="true">✓</span>
+                            <div>
+                                <h3>Business details saved</h3>
+                                <p>Your saved business connection details are shown below.</p>
+                            </div>
+                        </div>
+                        <div id="bz" class="business-summary"></div>
+                        <a class="btn btn-out" href="merchant_onboarding.html"
+                           id="bizEdit" onclick="persist()">
+                            Edit business details
+                        </a>
+                    </div>
+
+                    <div id="fin" class="hide">
+                        <div class="stp">
+                            <i>3</i>
+                            Finish registration
+                        </div>
+
+                        <div class="row">
+                            <div class="su-field">
+                                <label for="password">Password</label>
+                                <div class="f">
+                                    <input id="password" name="password" type="password"
+                                           class="i-lock" placeholder="Create password"
+                                           autocomplete="new-password">
+                                </div>
+                                <p class="field-help">Use at least 8 characters.</p>
+                            </div>
+
+                            <div class="su-field">
+                                <label for="confirm">Confirm password</label>
+                                <div class="f">
+                                    <input id="confirm" name="confirm" type="password"
+                                           class="i-lock" placeholder="Re-enter password"
+                                           autocomplete="new-password">
+                                </div>
+                            </div>
+                        </div>
+
+                        <label class="chk" for="consent">
+                            <input id="consent" type="checkbox">
+                            <span>
+                                I agree to the Terms, Privacy Policy and data-processing
+                                consent, including verification of my business with KRA.
+                            </span>
+                        </label>
+
+                        <button type="submit" class="btn btn-red cta" id="create">
+                            Create merchant account
+                        </button>
+                    </div>
+
+                    <p class="msg" id="msg" role="status" aria-live="polite"></p>
+                </form>
+
+                <p class="alt su-foot">
+                    Already registered? <a href="log.html">Sign in</a>
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/merchant-signup.js"></script>
+</body>
+</html>

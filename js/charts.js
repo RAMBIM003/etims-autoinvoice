@@ -11,36 +11,78 @@ window.Charts = (function () {
         chart: 'M4 20V10M10 20V4M16 20v-8M22 20H2',
         shield: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4',
         check: 'M20 6L9 17l-5-5',
-        alert: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'
+        alert: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+        bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
+        calendar: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4',
+        pie: 'M21 12A9 9 0 1 1 12 3v9zM15 3.5A9 9 0 0 1 20.5 9H15z'
     };
 
     const icon = n => `<svg viewBox="0 0 24 24"><path d="${P[n] || P.chart}"/></svg>`;
 
-    // Bars (left axis) with a line (right axis) over a list of days.
-    function bars(el, labels, sales, orders) {
-        const W = 640, H = 230, L = 48, R = 30, T = 14, B = 28, n = labels.length;
-        const pw = (W - L - R) / n, ms = Math.max(1, ...sales), mo = Math.max(1, ...orders);
-        const y = v => T + (H - T - B) * (1 - v / ms), y2 = v => T + (H - T - B) * (1 - v / mo);
-        let s = `<svg viewBox="0 0 ${W} ${H}" class="chart">`;
+    // Smooth curve through points (Catmull-Rom converted to cubic beziers).
+    // Control points are clamped so the curve never dips below the baseline.
+    function smooth(pts, floor) {
+        if (!pts.length) return '';
+        if (pts.length === 1) return `M${pts[0][0]},${pts[0][1]}`;
+        let d = `M${pts[0][0]},${pts[0][1]}`;
+        for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+            const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+            const c1y = Math.min(floor, p1[1] + (p2[1] - p0[1]) / 6);
+            const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+            const c2y = Math.min(floor, p2[1] - (p3[1] - p1[1]) / 6);
+            d += ` C${c1x},${c1y} ${c2x},${c2y} ${p2[0]},${p2[1]}`;
+        }
+        return d;
+    }
+
+    const nice = v => {
+        const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
+        return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+    };
+    const kfmt = v => v >= 1000 ? (+(v / 1000).toFixed(1)) + 'k' : String(Math.round(v));
+
+    // Two smooth lines over a list of days: sales (left axis, red, with soft fill)
+    // and orders (right axis, dark).
+    function lines(el, labels, sales, orders) {
+        const W = 640, H = 250, L = 52, R = 34, T = 16, B = 30, n = labels.length;
+        const ms = nice(Math.max(1, ...sales) / 4) * 4;
+        const mo = Math.max(4, Math.ceil(Math.max(0, ...orders) / 4) * 4);
+        const base = H - B, ph = base - T;
+        const y = v => T + ph * (1 - v / ms), y2 = v => T + ph * (1 - v / mo);
+        const x = i => n > 1 ? L + 14 + i * ((W - L - R - 28) / (n - 1)) : (L + W - R) / 2;
+
+        let s = `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Sales overview">` +
+            `<defs><linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">` +
+            `<stop offset="0" stop-color="#d9162b" stop-opacity=".22"/><stop offset="1" stop-color="#d9162b" stop-opacity="0"/></linearGradient></defs>`;
 
         for (let i = 0; i <= 4; i++) {
-            const v = ms * i / 4, yy = y(v);
-            s += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="#e6e9f0"/>` +
-                `<text x="${L - 6}" y="${yy + 4}" text-anchor="end" font-size="10" fill="#64748b">${v >= 1000 ? Math.round(v / 1000) + 'k' : Math.round(v)}</text>`;
+            const yy = T + ph * (1 - i / 4);
+            s += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="#e9ecf2"/>` +
+                `<text x="${L - 8}" y="${yy + 4}" text-anchor="end" font-size="10.5" fill="#64748b">${kfmt(ms * i / 4)}</text>` +
+                `<text x="${W - R + 8}" y="${yy + 4}" text-anchor="start" font-size="10.5" fill="#64748b">${Math.round(mo * i / 4)}</text>`;
         }
 
-        sales.forEach((v, i) => {
-            s += `<rect x="${L + i * pw + pw * .2}" y="${y(v)}" width="${pw * .6}" height="${Math.max(0, H - B - y(v))}" rx="4" fill="#2563eb" opacity=".85"><title>${labels[i]}: KES ${Number(v).toLocaleString()}</title></rect>`;
-        });
+        const sp = sales.map((v, i) => [x(i), y(v)]);
+        const op = orders.map((v, i) => [x(i), y2(v)]);
+        const sd = smooth(sp, base);
 
-        s += `<polyline fill="none" stroke="#16a34a" stroke-width="2.5" points="${orders.map((v, i) => `${L + i * pw + pw / 2},${y2(v)}`).join(' ')}"/>`;
+        if (sp.length > 1) {
+            s += `<path d="${sd} L${sp[sp.length - 1][0]},${base} L${sp[0][0]},${base}Z" fill="url(#salesFill)"/>`;
+        }
+        s += `<path d="${smooth(op, base)}" fill="none" stroke="#111827" stroke-width="2.5" stroke-linecap="round"/>`;
+        s += `<path d="${sd}" fill="none" stroke="#d9162b" stroke-width="2.8" stroke-linecap="round"/>`;
+
+        sales.forEach((v, i) => {
+            s += `<circle cx="${sp[i][0]}" cy="${sp[i][1]}" r="4" fill="#fff" stroke="#d9162b" stroke-width="2.4"><title>${labels[i]}: KES ${Number(v).toLocaleString()}</title></circle>`;
+        });
         orders.forEach((v, i) => {
-            s += `<circle cx="${L + i * pw + pw / 2}" cy="${y2(v)}" r="3.5" fill="#16a34a"><title>${v} order(s)</title></circle>`;
+            s += `<circle cx="${op[i][0]}" cy="${op[i][1]}" r="3.5" fill="#111827"><title>${labels[i]}: ${v} order(s)</title></circle>`;
         });
 
         labels.forEach((l, i) => {
             if (n <= 10 || i % Math.ceil(n / 8) === 0) {
-                s += `<text x="${L + i * pw + pw / 2}" y="${H - 8}" text-anchor="middle" font-size="10" fill="#64748b">${l}</text>`;
+                s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="#64748b">${l}</text>`;
             }
         });
 
@@ -67,10 +109,16 @@ window.Charts = (function () {
         el.innerHTML = `<div class="donutwrap"><svg viewBox="0 0 42 42" class="donutsvg"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#eef1f6" stroke-width="5"/>${c}<text x="21" y="21.5" text-anchor="middle" font-size="7" font-weight="700" fill="#0f172a">${t}</text><text x="21" y="26.5" text-anchor="middle" font-size="3" fill="#64748b">${label || ''}</text></svg><ul class="legend">${parts.map(p => `<li><i style="background:${p.c}"></i>${p.n}<b>${p.v}</b><span>${Math.round(p.v / t * 100)}%</span></li>`).join('')}</ul></div>`;
     }
 
+    // Small smooth trend line with a soft fill, used on the stat cards.
     function spark(vals, color) {
         const w = 120, h = 36, m = Math.max(1, ...vals);
-        return `<svg viewBox="0 0 ${w} ${h}" class="spark"><polyline fill="none" stroke="${color}" stroke-width="2" points="${vals.map((v, i) => `${i * w / (vals.length - 1 || 1)},${h - 3 - (h - 8) * v / m}`).join(' ')}"/></svg>`;
+        const pts = vals.map((v, i) => [i * w / (vals.length - 1 || 1), h - 3 - (h - 8) * v / m]);
+        const d = smooth(pts, h - 2);
+        return `<svg viewBox="0 0 ${w} ${h}" class="spark" preserveAspectRatio="none">` +
+            `<path d="${d} L${w},${h} L0,${h}Z" fill="${color}" fill-opacity=".1"/>` +
+            `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round"/></svg>`;
     }
 
-    return { icon, bars, donut, spark };
+    // "bars" kept as an alias so any older call still works.
+    return { icon, bars: lines, lines, donut, spark };
 })();

@@ -1,0 +1,138 @@
+/* signup.css: load AFTER global.css and form.css.
+   Styles sign_merchant.html, sign_buyer.html and merchant_onboarding.html.
+   Everything is scoped under body.su so no other page is affected. */
+
+body.fp.su{
+    min-height:100vh;
+    background:
+        radial-gradient(circle at 8% 0,rgba(220,15,15,.08),transparent 40%),
+        radial-gradient(circle at 94% 8%,rgba(37,99,235,.08),transparent 40%),
+        #f3f5fa;
+}
+.su{--ink:#0f172a;--mut:#5b6472;--line2:#e4e8f0;--soft2:#f6f8fc;--red2:#dc0f0f}
+
+/* ---------- Layout: sidebar + form card ---------- */
+.su .su-shell{max-width:1060px;margin:0 auto;padding:104px 20px 48px}
+.su .su-card{
+    display:grid;grid-template-columns:290px minmax(0,1fr);
+    background:#fff;border:1px solid var(--line2);border-radius:24px;
+    box-shadow:0 16px 44px rgba(15,23,42,.07);overflow:hidden;
+}
+.su .su-side{
+    display:flex;flex-direction:column;gap:28px;
+    padding:32px 26px 24px;
+    background:linear-gradient(180deg,#f9fbff,#f0f4fb);
+    border-right:1px solid var(--line2);
+}
+.su .su-art{display:block;width:100%;height:auto;margin-top:auto}
+.su .su-main{padding:34px 40px 30px;min-width:0}
+
+/* ---------- Vertical stepper (the .flowbar the script updates) ---------- */
+.su .flowbar{display:flex;flex-direction:column;margin:0;gap:0}
+.su .flowbar span{
+    position:relative;display:flex;align-items:center;gap:14px;
+    flex:none;padding:0 0 28px;margin:0;
+    background:none;border:0;border-radius:0;text-align:left;
+    font-size:15.5px;font-weight:700;color:#7b8494;
+}
+.su .flowbar span:last-child{padding-bottom:0}
+.su .flowbar span:not(:last-child)::before{
+    content:"";position:absolute;left:19px;top:44px;bottom:4px;width:2px;background:#d5ddec;
+}
+.su .flowbar i{
+    flex:none;width:40px;height:40px;border-radius:50%;
+    display:grid;place-items:center;font-style:normal;font-size:15px;font-weight:800;
+    background:#e6ecf8;color:#44537a;
+}
+.su .flowbar b{font-weight:700}
+.su .flowbar span.on{color:var(--ink)}
+.su .flowbar span.on i{background:var(--red2);color:#fff;box-shadow:0 0 0 5px rgba(220,15,15,.12)}
+.su .flowbar span.done{color:var(--ink)}
+.su .flowbar span.done i{background:#dcf5e6;color:#12703a}
+.su .flowbar span.done:not(:last-child)::before{background:#9fd8b3}
+
+/* ---------- Header ---------- */
+.su .fhead{display:flex;gap:14px;align-items:flex-start;margin:0 0 22px}
+.su .fhead h1{font-size:clamp(26px,3vw,34px);line-height:1.1;letter-spacing:-.025em;color:var(--ink);margin:0}
+.su .fhead h1:after{display:none}
+.su .signup-eyebrow{display:block;font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--red2);margin:2px 0 8px}
+.su .fhead p{margin:8px 0 0;color:var(--mut);font-size:16px;line-height:1.5}
+
+/* ---------- Form ---------- */
+.su .stp{
+    display:flex;align-items:center;gap:10px;
+    margin:28px 0 2px;padding-top:22px;border-top:1px solid var(--line2);
+    font-size:17px;font-weight:800;color:var(--ink);
+}
+.su .stp.first{border:0;margin-top:0;padding-top:0}
+.su .su-field{margin-top:14px}
+.su label{display:block;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--ink)}
+.su .f input,.su .f select{
+    height:46px;border-radius:12px;border:1px solid #d5dbe6;font-size:15px;background-color:#fff;
+}
+.su .f input:focus,.su .f select:focus{border-color:var(--red2);box-shadow:0 0 0 3px rgba(220,15,15,.14)}
+.su .f .inl{top:5px;right:5px;height:36px;border-radius:9px}
+.su .row{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+.su .field-help,.su .help{margin:6px 0 0;font-size:13px;line-height:1.5;color:#7b8494}
+
+.su .otpbox{margin-top:16px;padding:14px 16px 16px;background:var(--soft2);border:1px solid var(--line2);border-radius:14px}
+.su .otp{max-width:380px;margin:8px 0 14px}
+.su .otp input{border-radius:10px}
+.su .otpbox .cta{margin-top:0;max-width:380px}
+.su .ok{margin-top:10px}
+
+.su .chk{
+    display:flex;gap:12px;align-items:flex-start;margin:22px 0 0;
+    font-size:14px;font-weight:400;line-height:1.55;color:#374151;cursor:pointer;
+}
+.su .chk input{flex:none;width:18px;height:18px;margin-top:2px;accent-color:var(--red2)}
+.su .su-consent{margin:0;padding:16px 18px;background:#fff7f7;border:1px solid #f6caca;border-radius:14px}
+
+.su .cta{display:flex;align-items:center;justify-content:center;width:100%;height:50px;margin-top:20px;border-radius:12px;font-size:16px}
+.su .msg{min-height:20px;margin-top:12px;font-size:14px}
+
+.su .su-foot{
+    margin:26px 0 0;padding-top:18px;border-top:1px solid var(--line2);
+    text-align:left;font-size:15px;color:var(--mut);
+}
+.su .su-foot a{color:var(--red2);font-weight:700}
+
+/* ---------- Business panels (merchant) ---------- */
+.su .biz{margin:14px 0 0;padding:22px;background:var(--soft2);border:1px dashed #cdd6e4;border-radius:16px}
+.su .biz.on{background:#f4fbf6;border:1px solid #cfe6d2}
+.su .biz h3{margin:12px 0 6px;font-size:18px;color:var(--ink)}
+.su .biz p{margin:0 0 6px;color:var(--mut);font-size:15px;line-height:1.55}
+.su .business-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#fdecec;color:var(--red2);font-size:20px;font-weight:800}
+.su .business-connected{display:flex;gap:14px;align-items:flex-start}
+.su .business-connected .business-icon{background:#dcf5e6;color:#12703a;flex:none}
+.su .business-connected h3{margin:0 0 4px}
+.su .business-summary{margin:14px 0;padding:14px 16px;background:#fff;border:1px solid var(--line2);border-radius:12px;font-size:14.5px;line-height:1.7}
+.su .biz .btn.btn-out{margin-top:4px}
+
+/* ---------- KRA panel (buyer + onboarding) ---------- */
+.su .kra{margin:14px 0 0;padding:16px 18px;border-radius:14px}
+.su .kra-heading{display:flex;gap:12px;align-items:flex-start}
+.su .kra-heading b{display:block;color:var(--ink)}
+.su .kra-heading p{margin:2px 0 0;color:var(--mut);font-size:14px}
+.su .kra-check{flex:none;width:28px;height:28px;border-radius:50%;background:#1a9c3c;color:#fff;display:grid;place-items:center;font-size:14px}
+.su .pf{grid-template-columns:130px 1fr;gap:8px 12px;margin-top:12px}
+
+/* ---------- Buyer intro (sidebar) ---------- */
+.su .buyer-intro{display:flex;gap:12px;align-items:flex-start}
+.su .buyer-intro-icon{flex:none;width:36px;height:36px;border-radius:50%;background:#e3edff;color:#1d4ed8;display:grid;place-items:center;font-weight:800}
+.su .buyer-intro strong{display:block;font-size:16px;line-height:1.3;color:var(--ink)}
+.su .buyer-intro p{margin:6px 0 0;font-size:14px;line-height:1.55;color:var(--mut)}
+
+/* ---------- Mobile ---------- */
+@media(max-width:900px){
+    .su .su-shell{padding:96px 14px 32px}
+    .su .su-card{grid-template-columns:1fr}
+    .su .su-side{padding:20px 20px 18px;border-right:0;border-bottom:1px solid var(--line2);gap:0}
+    .su .su-art{display:none}
+    .su .su-main{padding:26px 20px 24px}
+    .su .flowbar{flex-direction:row;gap:8px}
+    .su .flowbar span{flex:1;flex-direction:column;align-items:flex-start;gap:8px;padding:0;font-size:13px}
+    .su .flowbar span::before{display:none!important}
+    .su .flowbar i{width:32px;height:32px;font-size:13px}
+    .su .row{grid-template-columns:1fr}
+}

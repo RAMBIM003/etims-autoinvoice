@@ -1,18 +1,144 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connect your business</title><link rel="stylesheet" href="css/global.css"><link rel="stylesheet" href="css/form.css"></head><body class="fp bg7">
-<header class="nav"><div class="bar"><a class="brand" href="index.html"><span class="logo">e</span>eTIMS AutoInvoice</a><nav class="links"><a href="index.html#home">Home</a><a href="index.html#explore">Explore</a><a href="index.html#features">Features</a><a href="index.html#contact">Contact</a></nav><div class="acts"><a class="btn btn-out" href="log.html">Login</a><a class="btn btn-dark" href="sign.html">Register</a></div></div></header>
-<div class="fcard"><div class="fhead"><a class="back" href="sign_merchant.html" aria-label="Back">←</a><div><h1>Connect your business</h1><p>Your KRA PIN and M-Pesa payment channel.</p></div></div>
-<div class="flowbar"><span class="done">1 Account details</span><span class="on">2 Connect your business</span><span>3 Finish</span></div>
-<form id="f" novalidate>
-<div class="stp first"><i>1</i>Business details</div>
-<label>Trading / business name</label><div class="f"><input id="biz" class="i-biz" placeholder="e.g. Astrol Energy"></div>
-<label>KRA PIN</label><div class="f bi"><input id="pin" class="i-id" placeholder="Enter business KRA PIN" maxlength="11"><button type="button" class="btn btn-red inl" id="connect" disabled>Connect PIN</button></div>
-<div id="kra" class="kra hide"><b>✓ KRA PIN verified</b><dl class="pf"><dt>PIN</dt><dd id="k_pin"></dd><dt>Taxpayer name</dt><dd id="k_name"></dd><dt>Taxpayer type</dt><dd id="k_type"></dd><dt>PIN status</dt><dd>● <span id="k_status"></span></dd><dt>KRA eTIMS</dt><dd id="k_oscu"></dd></dl></div>
-<div class="row"><div><label>Business phone</label><div class="f"><input id="bphone" class="i-phone" placeholder="Business contact" inputmode="tel"></div></div>
-<div><label>Business type</label><div class="f"><select id="btype" class="i-type"><option value="">Select type</option><option>Fuel station</option><option>Retail shop</option><option>Supermarket</option><option>Restaurant / hospitality</option><option>Pharmacy</option><option>Wholesale</option><option>Services</option><option>Other</option></select></div></div></div>
-<div class="stp"><i>2</i>M-Pesa (C2B payments)</div>
-<div class="row"><div><label>Paybill number</label><div class="f"><input id="paybill" class="i-biz" placeholder="e.g. 123456" inputmode="numeric" maxlength="7"></div></div>
-<div><label>Till number (optional)</label><div class="f"><input id="till" class="i-biz" placeholder="e.g. 654321" inputmode="numeric" maxlength="7"></div></div></div>
-<p class="help">Enter a Paybill, a Till, or both. Our server handles the Daraja credentials and registers the payment callbacks when your account is created.</p>
-<button class="btn btn-red cta" style="margin-top:18px">Save and return to registration</button>
-<p class="msg" id="msg"></p></form></div>
-<script src="js/api.js"></script><script src="js/onboarding.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Connect your business</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/form.css">
+    <link rel="stylesheet" href="css/signup.css">
+</head>
+
+<body class="fp su">
+
+    <header class="nav"><div class="bar">
+        <a class="brand" href="index.html"><span class="logo">e</span>eTIMS AutoInvoice</a>
+        <nav class="links">
+            <a href="index.html#home">Home</a>
+            <a href="index.html#explore">Explore</a>
+            <a href="index.html#features">Features</a>
+            <a href="index.html#contact">Contact</a>
+        </nav>
+        <div class="acts">
+            <a class="btn btn-out" href="log.html">Login</a>
+            <a class="btn btn-dark" href="sign.html">Register</a>
+        </div>
+    </div></header>
+
+    <main class="su-shell">
+        <section class="su-card" aria-labelledby="ob-title">
+
+            <aside class="su-side">
+                <div class="flowbar" aria-label="Registration progress">
+                    <span class="done"><i>1</i><b>Account details</b></span>
+                    <span class="on"><i>2</i><b>Connect your business</b></span>
+                    <span><i>3</i><b>Finish</b></span>
+                </div>
+
+                <svg class="su-art" viewBox="0 0 240 180" aria-hidden="true">
+                    <ellipse cx="112" cy="104" rx="104" ry="68" fill="#e8eefb"/>
+                    <circle cx="150" cy="44" r="42" fill="#fde4e6" opacity=".85"/>
+                    <circle cx="218" cy="50" r="6" fill="#d6e2fa"/>
+                    <rect x="28" y="80" width="96" height="76" rx="5" fill="#fff" stroke="#2f4b8f" stroke-width="4"/>
+                    <rect x="44" y="104" width="40" height="32" rx="3" fill="#4a6fb5"/>
+                    <rect x="56" y="110" width="16" height="16" rx="4" fill="#e11d2e"/>
+                    <text x="64" y="123" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" font-weight="800" fill="#fff">e</text>
+                    <path d="M20 80l10-40h84l10 40z" fill="#e11d2e" stroke="#2f4b8f" stroke-width="4" stroke-linejoin="round"/>
+                    <path d="M48 42v36M76 42v36M104 42v36" stroke="#fff" stroke-width="9"/>
+                    <rect x="108" y="62" width="76" height="98" rx="8" fill="#fff" stroke="#cfd8ea" stroke-width="3"/>
+                    <rect x="118" y="72" width="14" height="14" rx="4" fill="#e11d2e"/>
+                    <text x="125" y="83" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="#fff">e</text>
+                    <text x="138" y="83" font-family="Arial,sans-serif" font-size="10" font-weight="800" fill="#1e2a4a">eTIMS</text>
+                    <rect x="118" y="94" width="56" height="4" rx="2" fill="#d5ddec"/>
+                    <rect x="118" y="104" width="44" height="4" rx="2" fill="#d5ddec"/>
+                    <rect x="118" y="114" width="52" height="4" rx="2" fill="#d5ddec"/>
+                    <path d="M168 118l22 8v16c0 16-10 26-22 32-12-6-22-16-22-32v-16z" fill="#e11d2e" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+                    <path d="M158 142l7 7 14-15" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </aside>
+
+            <div class="su-main">
+
+                <div class="fhead">
+                    <a class="back" href="sign_merchant.html" aria-label="Back">←</a>
+                    <div>
+                        <h1 id="ob-title">Connect your business</h1>
+                        <p>Your KRA PIN and M-Pesa payment channel.</p>
+                    </div>
+                </div>
+
+                <form id="f" novalidate>
+                    <div class="stp first"><i>1</i>Business details</div>
+
+                    <div class="su-field">
+                        <label for="biz">Trading / business name</label>
+                        <div class="f"><input id="biz" class="i-biz" placeholder="e.g. Astrol Energy"></div>
+                    </div>
+
+                    <div class="su-field">
+                        <label for="pin">KRA PIN</label>
+                        <div class="f bi">
+                            <input id="pin" class="i-id" placeholder="Enter business KRA PIN" maxlength="11">
+                            <button type="button" class="btn btn-red inl" id="connect" disabled>Connect PIN</button>
+                        </div>
+                    </div>
+
+                    <div id="kra" class="kra hide">
+                        <b>✓ KRA PIN verified</b>
+                        <dl class="pf">
+                            <dt>PIN</dt><dd id="k_pin"></dd>
+                            <dt>Taxpayer name</dt><dd id="k_name"></dd>
+                            <dt>Taxpayer type</dt><dd id="k_type"></dd>
+                            <dt>PIN status</dt><dd>● <span id="k_status"></span></dd>
+                            <dt>KRA eTIMS</dt><dd id="k_oscu"></dd>
+                        </dl>
+                    </div>
+
+                    <div class="row">
+                        <div class="su-field">
+                            <label for="bphone">Business phone</label>
+                            <div class="f"><input id="bphone" class="i-phone" placeholder="Business contact" inputmode="tel"></div>
+                        </div>
+                        <div class="su-field">
+                            <label for="btype">Business type</label>
+                            <div class="f">
+                                <select id="btype" class="i-type">
+                                    <option value="">Select type</option>
+                                    <option>Fuel station</option>
+                                    <option>Retail shop</option>
+                                    <option>Supermarket</option>
+                                    <option>Restaurant / hospitality</option>
+                                    <option>Pharmacy</option>
+                                    <option>Wholesale</option>
+                                    <option>Services</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="stp"><i>2</i>M-Pesa (C2B payments)</div>
+
+                    <div class="row">
+                        <div class="su-field">
+                            <label for="paybill">Paybill number</label>
+                            <div class="f"><input id="paybill" class="i-biz" placeholder="e.g. 123456" inputmode="numeric" maxlength="7"></div>
+                        </div>
+                        <div class="su-field">
+                            <label for="till">Till number (optional)</label>
+                            <div class="f"><input id="till" class="i-biz" placeholder="e.g. 654321" inputmode="numeric" maxlength="7"></div>
+                        </div>
+                    </div>
+                    <p class="help">Enter a Paybill, a Till, or both. Our server handles the Daraja credentials and registers the payment callbacks when your account is created.</p>
+
+                    <button class="btn btn-red cta">Save and return to registration</button>
+                    <p class="msg" id="msg"></p>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <script src="js/api.js"></script>
+    <script src="js/onboarding.js"></script>
+</body>
+</html>
