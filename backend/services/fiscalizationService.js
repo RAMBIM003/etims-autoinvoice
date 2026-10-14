@@ -246,7 +246,14 @@ async function fiscalizeSale(saleId, merchantId = null) {
         const mapping = mapped[item.item_id] || {};
 
         item.cls = mapping.cls || fallbackClass;
-        item.cd = mapping.code || generatedItemCode(item.item_id, index);
+        if (!mapping.code || !mapping.cls) {
+            throw fail(
+                `"${item.item_name}" is not registered with KRA yet. Register it first.`,
+                400
+            );
+        }
+
+        item.cd = mapping.code;
 
         if (!item.cls) {
             throw fail(
@@ -278,7 +285,7 @@ async function fiscalizeSale(saleId, merchantId = null) {
         throw fail('This invoice is already being fiscalized', 409);
     }
 
-    await registerItems({ tin, branch, cmcKey, items });
+    // Items are registered beforehand via itemKraService (POST /api/kra-items/:id/register).
 
     const totals = {
         A: { taxable: 0, tax: 0 },

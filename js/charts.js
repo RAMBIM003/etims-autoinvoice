@@ -14,7 +14,17 @@ window.Charts = (function () {
         alert: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
         bell: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0',
         calendar: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4',
-        pie: 'M21 12A9 9 0 1 1 12 3v9zM15 3.5A9 9 0 0 1 20.5 9H15z'
+        pie: 'M21 12A9 9 0 1 1 12 3v9zM15 3.5A9 9 0 0 1 20.5 9H15z',
+        tag: 'M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8zM7.5 7.5h.01',
+        copy: 'M9 9h11v11H9zM5 15V4h11',
+        plus: 'M12 5v14M5 12h14',
+        chev: 'M9 6l6 6-6 6',
+        search: 'M21 21l-4.3-4.3M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z',
+        filter: 'M3 5h18l-7 8v6l-4 2v-8z',
+        receipt: 'M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2zM9 8h6M9 12h6',
+        user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6',
+        phone: 'M7 2h10v20H7zM11 18h2',
+        eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'
     };
 
     const icon = n => `<svg viewBox="0 0 24 24"><path d="${P[n] || P.chart}"/></svg>`;
@@ -42,25 +52,40 @@ window.Charts = (function () {
     };
     const kfmt = v => v >= 1000 ? (+(v / 1000).toFixed(1)) + 'k' : String(Math.round(v));
 
-    // Two smooth lines over a list of days: sales (left axis, red, with soft fill)
+    // Charts redraw at their real pixel width, so text stays readable at any size.
+    const live = new Set();
+    let rt;
+    window.addEventListener('resize', () => {
+        clearTimeout(rt);
+        rt = setTimeout(() => live.forEach(el => {
+            if (!el.isConnected) { live.delete(el); return; }
+            lines(el, ...el._a);
+        }), 150);
+    });
+
+    // Two smooth lines over a list of days: sales (left axis, red, soft fill)
     // and orders (right axis, dark).
     function lines(el, labels, sales, orders) {
-        const W = 640, H = 250, L = 52, R = 34, T = 16, B = 30, n = labels.length;
+        el._a = [labels, sales, orders];
+        live.add(el);
+
+        const W = Math.max(320, Math.round(el.clientWidth) || 640), H = 232;
+        const L = 54, R = 40, T = 16, B = 32, n = labels.length;
         const ms = nice(Math.max(1, ...sales) / 4) * 4;
         const mo = Math.max(4, Math.ceil(Math.max(0, ...orders) / 4) * 4);
         const base = H - B, ph = base - T;
         const y = v => T + ph * (1 - v / ms), y2 = v => T + ph * (1 - v / mo);
-        const x = i => n > 1 ? L + 14 + i * ((W - L - R - 28) / (n - 1)) : (L + W - R) / 2;
+        const x = i => n > 1 ? L + 16 + i * ((W - L - R - 32) / (n - 1)) : (L + W - R) / 2;
 
-        let s = `<svg viewBox="0 0 ${W} ${H}" class="chart" role="img" aria-label="Sales overview">` +
+        let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="chart" role="img" aria-label="Sales overview">` +
             `<defs><linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">` +
             `<stop offset="0" stop-color="#d9162b" stop-opacity=".22"/><stop offset="1" stop-color="#d9162b" stop-opacity="0"/></linearGradient></defs>`;
 
         for (let i = 0; i <= 4; i++) {
             const yy = T + ph * (1 - i / 4);
             s += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="#e9ecf2"/>` +
-                `<text x="${L - 8}" y="${yy + 4}" text-anchor="end" font-size="10.5" fill="#64748b">${kfmt(ms * i / 4)}</text>` +
-                `<text x="${W - R + 8}" y="${yy + 4}" text-anchor="start" font-size="10.5" fill="#64748b">${Math.round(mo * i / 4)}</text>`;
+                `<text x="${L - 10}" y="${yy + 4}" text-anchor="end" font-size="12" fill="#64748b">${kfmt(ms * i / 4)}</text>` +
+                `<text x="${W - R + 10}" y="${yy + 4}" text-anchor="start" font-size="12" fill="#64748b">${Math.round(mo * i / 4)}</text>`;
         }
 
         const sp = sales.map((v, i) => [x(i), y(v)]);
@@ -74,15 +99,16 @@ window.Charts = (function () {
         s += `<path d="${sd}" fill="none" stroke="#d9162b" stroke-width="2.8" stroke-linecap="round"/>`;
 
         sales.forEach((v, i) => {
-            s += `<circle cx="${sp[i][0]}" cy="${sp[i][1]}" r="4" fill="#fff" stroke="#d9162b" stroke-width="2.4"><title>${labels[i]}: KES ${Number(v).toLocaleString()}</title></circle>`;
+            s += `<circle cx="${sp[i][0]}" cy="${sp[i][1]}" r="4.5" fill="#fff" stroke="#d9162b" stroke-width="2.4"><title>${labels[i]}: KES ${Number(v).toLocaleString()}</title></circle>`;
         });
         orders.forEach((v, i) => {
-            s += `<circle cx="${op[i][0]}" cy="${op[i][1]}" r="3.5" fill="#111827"><title>${labels[i]}: ${v} order(s)</title></circle>`;
+            s += `<circle cx="${op[i][0]}" cy="${op[i][1]}" r="3.8" fill="#111827"><title>${labels[i]}: ${v} order(s)</title></circle>`;
         });
 
+        const every = Math.ceil(n / Math.max(2, Math.floor((W - L - R) / 62)));
         labels.forEach((l, i) => {
-            if (n <= 10 || i % Math.ceil(n / 8) === 0) {
-                s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" font-size="10.5" fill="#64748b">${l}</text>`;
+            if (i % every === 0) {
+                s += `<text x="${x(i)}" y="${H - 9}" text-anchor="middle" font-size="12" fill="#64748b">${l}</text>`;
             }
         });
 
