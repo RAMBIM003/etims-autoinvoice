@@ -1,0 +1,116 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Buyer registration | eTIMS AutoInvoice</title>
+<link rel="stylesheet" href="css/global.css">
+<link rel="stylesheet" href="css/form.css">
+<link rel="stylesheet" href="css/signup.css">
+<style>
+.hide{display:none!important}
+.checklist{list-style:none;padding:0;margin:14px 0}
+.checklist li{color:#6b7280;padding:3px 0;font-size:14px}
+.checklist li.done{color:#067647;font-weight:600}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5}
+.check input{margin-top:4px}
+</style>
+</head>
+<body class="fp su signup-page buyer-signup">
+
+<header class="nav"><div class="bar">
+    <a class="brand" href="index.html"><span class="logo">e</span><span>eTIMS AutoInvoice</span></a>
+    <div class="acts"><a class="btn btn-out" href="log.html">Login</a><a class="btn btn-dark" href="sign.html">Register</a></div>
+</div></header>
+
+<main class="su-shell">
+<section class="su-card buyer-card">
+    <aside class="su-side">
+        <div class="buyer-intro">
+            <span class="buyer-intro-icon">&#10003;</span>
+            <div>
+                <strong>Your eTIMS receipts, organised</strong>
+                <p>Verify your phone, connect your KRA PIN and choose your M-Pesa name. Payments made from that name and phone appear in your account.</p>
+            </div>
+        </div>
+    </aside>
+
+    <div class="su-main">
+        <div class="fhead">
+            <a class="back" href="sign.html">&larr; Back</a>
+            <h1>Create your buyer account</h1>
+            <p class="field-help">Complete each step. The button unlocks when everything is ticked.</p>
+        </div>
+
+        <form id="f" novalidate>
+            <div class="stp"><i>1</i> Verify your phone</div>
+            <div class="su-field">
+                <label for="phone">Mobile number</label>
+                <div class="f">
+                    <input id="phone" class="i-phone" placeholder="07XX XXX XXX" autocomplete="tel">
+                    <button type="button" class="btn btn-red" id="sendOtp">Send OTP</button>
+                </div>
+            </div>
+            <div id="otpBox" class="hide">
+                <p class="field-help">Enter the 6-digit code sent to <b id="sentTo"></b>. <a href="#" id="resend">Resend</a></p>
+                <div class="otp">
+                    <input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric">
+                </div>
+                <button type="button" class="btn btn-red" id="verify">Verify</button>
+            </div>
+            <p class="ok hide" id="pOk">Phone verified.</p>
+
+            <div class="stp"><i>2</i> Connect your KRA PIN</div>
+            <div class="su-field">
+                <label for="pin">KRA PIN</label>
+                <div class="f">
+                    <input id="pin" class="i-user" placeholder="e.g. A123456789Z" autocomplete="off">
+                    <button type="button" class="btn btn-red" id="connect" disabled>Connect PIN</button>
+                </div>
+            </div>
+            <p id="kraInfo" class="ok hide"></p>
+
+            <div class="stp"><i>3</i> Your account</div>
+            <div class="su-field">
+                <label for="mpesaName">Your name, as on M-Pesa</label>
+                <div class="f"><input id="mpesaName" placeholder="First and last name" autocomplete="name"></div>
+                <p class="field-help">Payments from this name and your phone's last 3 digits are linked to your account.</p>
+            </div>
+            <div class="su-field">
+                <label for="email">Email (optional)</label>
+                <div class="f"><input id="email" type="email" class="i-mail" placeholder="you@example.com" autocomplete="email"></div>
+            </div>
+            <div class="row">
+                <div class="su-field">
+                    <label for="password">Password</label>
+                    <div class="f"><input id="password" type="password" class="i-lock" placeholder="Create password" autocomplete="new-password"></div>
+                    <p class="field-help">At least 8 characters.</p>
+                </div>
+                <div class="su-field">
+                    <label for="confirm">Confirm password</label>
+                    <div class="f"><input id="confirm" type="password" class="i-lock" placeholder="Re-enter password" autocomplete="new-password"></div>
+                </div>
+            </div>
+
+            <div class="stp"><i>4</i> Consent and create</div>
+            <div class="su-field">
+                <label class="check"><input type="checkbox" id="consent"> I agree to share my phone number and KRA PIN with eTIMS AutoInvoice so merchants can add my PIN to invoices, and my eTIMS receipts are sent to this phone. I can unlink my details at any time.</label>
+            </div>
+            <div class="su-field">
+                <label class="check"><input type="checkbox" id="mpesaConsent"> Payments made from my M-Pesa name and phone number may be linked to me, so that my receipts and purchases appear in my account. I can remove this link at any time.</label>
+            </div>
+
+            <ul class="checklist" id="checklist"></ul>
+            <button type="submit" class="btn btn-red cta" id="create" disabled>Create buyer account</button>
+            <p class="msg" id="msg" role="status" aria-live="polite"></p>
+        </form>
+
+        <p class="alt">Already have an account? <a href="log.html">Sign in</a></p>
+    </div>
+</section>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/buyer-signup.js"></script>
+</body>
+</html>

@@ -18,20 +18,23 @@ const fail = (message, status) =>
 */
 r.post('/buyer/register', wrap(async (q, s) => {
     const b = q.body || {};
-    const pin = String(b.pin || '').trim().toUpperCase();
+    const pin = String(b.pin || '').trim().toUpperCase() || null;
     const email = String(b.email || '').trim().toLowerCase() || null;
     const password = String(b.password || '');
 
     if (
         !C.phoneOk(b.phone) ||
         b.consent !== true ||
-        !/^[AP]\d{9}[A-Z]$/.test(pin) ||
+        (pin !== null && !/^[AP]\d{9}[A-Z]$/.test(pin)) ||
         password.length < 8
     ) {
         throw fail('Invalid buyer registration details', 400);
     }
 
-    let k = await kra.validatePin(pin);
+    let k = pin ? await kra.validatePin(pin) : { valid: true, status: 'Active', name: String(b.name || '').trim() || 'Buyer', type: null, unavailable: false };
+    if (!k.valid && k.unavailable && String(process.env.KRA_ENV || '').toUpperCase() === 'SANDBOX') {
+        k = { valid: true, status: 'Active', name: String((q.body && q.body.name) || '').trim() || 'Sandbox Buyer', type: 'UNVERIFIED' };
+    }
 
     if (
         !k.valid &&

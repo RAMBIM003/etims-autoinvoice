@@ -2,6 +2,7 @@ const r = require('express').Router();
 const db = require('../db');
 const mpesa = require('../services/mpesaService');
 const tx = require('../services/transactionService');
+const buyerLink = require('../services/buyerLinkService');
 const wrap = require('../middleware/wrap');
 
 const fail = (message, status) =>
@@ -246,7 +247,7 @@ r.post('/c2b/confirmation', wrap(async (q, s) => {
 
     if (matchedPaymentId) {
         try {
-            await tx.processAndFiscalize(matchedPaymentId);
+            await buyerLink.linkSaleFromPayment(matchedPaymentId).catch(e => console.warn('Buyer link skipped:', e.message)); await tx.processAndFiscalize(matchedPaymentId);
         } catch (error) {
             console.error(
                 'Matched payment processing failed:',

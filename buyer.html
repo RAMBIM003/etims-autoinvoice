@@ -1,86 +1,91 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Buy | eTIMS AutoInvoice</title>
+<title>My purchases | eTIMS AutoInvoice</title>
+<!-- Same stylesheets as the merchant dashboard, so both sides match -->
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/merchant.css">
 <style>
-    * { box-sizing: border-box; }
-    body { font-family: Inter, Arial, sans-serif; margin: 0; background: #f6f7f9; color: #17191d; }
-    .top { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; }
-    .top b { font-size: 16px; }
-    .top a, .top button { margin-left: 10px; font-size: 13px; }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 24px 16px 60px; }
-    .card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin: 16px 0; }
-    h1 { font-size: 22px; margin: 0 0 4px; }
-    h2 { font-size: 16px; margin: 0 0 14px; }
-    .muted { color: #6b7280; font-size: 13px; }
-    select { padding: 10px; width: 100%; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; }
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
-    .item { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; }
-    .qty { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
-    .qty button { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; font-size: 16px; cursor: pointer; }
-    .qty span { min-width: 20px; text-align: center; font-weight: 600; }
-    .primary { background: #c7192e; color: #fff; border: 0; padding: 10px 16px; border-radius: 8px; font-size: 14px; cursor: pointer; }
-    .primary:disabled { opacity: .5; cursor: not-allowed; }
-    .secondary { background: #fff; border: 1px solid #d1d5db; padding: 8px 12px; border-radius: 8px; font-size: 13px; cursor: pointer; }
-    .line { display: flex; justify-content: space-between; padding: 4px 0; font-size: 14px; }
-    .line.total { font-weight: 700; font-size: 16px; border-top: 1px solid #e5e7eb; margin-top: 6px; padding-top: 8px; }
-    .notice { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 12px; font-size: 13px; margin-top: 12px; }
-    .sandbox { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px; font-size: 13px; margin-top: 12px; }
-    .error { background: #fef2f2; border: 1px solid #fecaca; color: #b42318; border-radius: 8px; padding: 10px; font-size: 13px; margin-top: 12px; }
-    .ok { background: #ecfdf3; border: 1px solid #abefc6; color: #067647; border-radius: 8px; padding: 10px; font-size: 13px; margin-top: 12px; }
-    .pay { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
-    .pay div { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; }
-    .pay small { display: block; color: #6b7280; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
-    .pay b { font-size: 16px; word-break: break-all; }
-    .steps { display: flex; gap: 8px; margin: 16px 0 4px; }
-    .step { flex: 1; text-align: center; font-size: 12px; padding: 10px 6px; border-radius: 8px; background: #f3f4f6; color: #6b7280; }
-    .step.done { background: #ecfdf3; color: #067647; font-weight: 600; }
-    .step.active { background: #fff7ed; color: #b54708; font-weight: 600; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { text-align: left; color: #6b7280; font-size: 11px; text-transform: uppercase; padding: 8px 4px; border-bottom: 1px solid #e5e7eb; }
-    td { padding: 10px 4px; border-bottom: 1px solid #f1f2f4; }
-    .mono { font-family: "JetBrains Mono", Consolas, monospace; }
-    .pill { padding: 3px 9px; border-radius: 99px; background: #eee; font-size: 12px; white-space: nowrap; }
-    .pill.ok2 { background: #ecfdf3; color: #067647; }
-    .pill.warn { background: #fff7ed; color: #b54708; }
-    .pill.bad { background: #fef2f2; color: #b42318; }
-    @media (max-width: 700px) { .grid, .pay { grid-template-columns: 1fr; } .steps { flex-direction: column; } }
+    /* Buyer-only additions */
+    .badge.pin{background:rgba(255,255,255,.1);color:#cbd5e1}
+    .primary.sm{padding:6px 11px;font-size:12px;border-radius:8px}
+    .lk{max-width:680px}
+    .lk p{margin:0 0 10px;font-size:14px;line-height:1.55}
+    .lk-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+    .lk-row input[type=text]{flex:1;min-width:200px;max-width:380px;padding:10px 12px;border-radius:10px;font-size:14px}
+    .lc{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:13px;line-height:1.5;color:#374151;cursor:pointer}
+    .lc input[type=checkbox]{flex:none;width:18px;height:18px;margin:2px 0 0;padding:0;accent-color:var(--red)}
+    .rl{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f6}
+    .rl:last-child{border-bottom:0;padding-bottom:0}
+    .rl .meta{flex:1;min-width:0}
+    .rl b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rl small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .rl .btns{display:flex;gap:6px;flex:none}
+    .gate{max-width:520px;margin:40px auto;text-align:center;padding:28px}
+    @media(max-width:600px){.rl{flex-wrap:wrap}.rl .btns{width:100%}}
 </style>
 </head>
 <body>
-<div class="top">
-    <b>eTIMS AutoInvoice</b>
-    <div id="auth"></div>
+<div class="app">
+    <aside class="side">
+        <div class="brand"><span class="mk">e</span><span>eTIMS AutoInvoice</span></div>
+
+        <div class="bizbox">
+            <span class="biz-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
+            <div>
+                <div class="biz" id="who">Buyer</div>
+                <span class="badge pin hide" id="pin"></span>
+            </div>
+        </div>
+
+        <nav class="nav" id="nav"></nav>
+
+        <a class="helpcard" href="mailto:support@example.com">
+            <span class="hc-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v5H5a1 1 0 0 1-1-1zM20 14h-3v5h2a1 1 0 0 0 1-1zM17 19c0 1.5-2 2-5 2"/></svg></span>
+            <div><b>Need Help?</b><small>Contact Support</small></div>
+            <svg class="hc-go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+
+        <div class="sysbox">
+            <i class="dot on"></i>
+            <div><b>System Online</b><small id="updated">Last updated: &mdash;</small></div>
+            <svg class="pulse" viewBox="0 0 48 20" aria-hidden="true"><path d="M0 10h12l4-8 6 16 5-12 3 4h18"/></svg>
+        </div>
+        <button class="out" id="logout">Sign out</button>
+    </aside>
+
+    <main class="main">
+        <div class="top">
+            <div class="search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input id="q" placeholder="Search purchases, receipts or reference...">
+            </div>
+
+            <div class="bellwrap">
+                <button class="bell" id="bell" type="button" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                    <em id="bellCount" class="hide">0</em>
+                </button>
+
+                <div class="npop hide" id="npop" role="dialog" aria-label="Notifications">
+                    <div class="np-head">
+                        <b>Notifications</b>
+                        <em class="count hide" id="nCount">0</em>
+                        <button class="linkbtn" id="mar" type="button">Mark all read</button>
+                    </div>
+                    <ul class="notes" id="noteList"></ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="content" id="app"></div>
+    </main>
 </div>
 
-<main class="wrap">
-    <h1>Buy from a Masterclass merchant</h1>
-    <p class="muted">Pick items, pay by M-Pesa, and get a KRA eTIMS receipt.</p>
-
-    <section class="card">
-        <h2>1. Choose what to buy</h2>
-        <select id="merchant"></select>
-        <div id="catalog" class="grid"></div>
-    </section>
-
-    <section class="card">
-        <h2>2. Your order</h2>
-        <div id="cart" class="muted">Add items above.</div>
-        <div style="margin-top:14px"><button class="primary" id="create" disabled>Create order</button></div>
-        <div id="msg"></div>
-    </section>
-
-    <section class="card" id="payCard" hidden></section>
-
-    <section class="card">
-        <h2>My orders</h2>
-        <div id="orders" class="muted">Sign in to see your orders.</div>
-    </section>
-</main>
-
 <script src="js/api.js"></script>
+<script src="js/charts.js"></script>
 <script src="js/buyer.js"></script>
 </body>
 </html>

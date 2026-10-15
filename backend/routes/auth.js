@@ -8,7 +8,7 @@ r.post('/otp/send',wrap(async(q,s)=>{
  if(!C.phoneOk(phone))throw fail('Invalid phone number',400);
  const u=await byPhone(C.phoneHash(phone));
  if(purpose!=='LOGIN'&&u)throw fail('This number already has an account. Sign in instead.',409);
- if(purpose==='LOGIN'&&!u)return s.json({sent:true});
+ if(purpose==='LOGIN'&&!u)throw fail('No account found for this number. Sign in with your password or register as a buyer first.',404);
  await otp.send(phone,purpose);s.json({sent:true})}));
 r.post('/otp/verify',wrap(async(q,s)=>{
  const{phone,code,purpose}=q.body;

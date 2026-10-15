@@ -1,4 +1,4 @@
-﻿const r = require('express').Router();
+const r = require('express').Router();
 const db = require('../db');
 const mpesa = require('../services/mpesaService');
 const tx = require('../services/transactionService');
@@ -16,6 +16,7 @@ r.post('/c2b/validation', (q, s) => {
 
 r.post('/c2b/confirmation', wrap(async (q, s) => {
     const body = q.body || {};
+    console.log('C2B confirmation received:', JSON.stringify(body));
     const transId = String(body.TransID || '').trim();
     const shortcode = String(body.BusinessShortCode || '').trim();
     const billRef = String(body.BillRefNumber || '').trim();

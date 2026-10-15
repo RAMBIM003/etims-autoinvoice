@@ -4,6 +4,7 @@ const auth = require('../middleware/auth');
 const wrap = require('../middleware/wrap');
 const mpesa = require('../services/mpesaService');
 const receipts = require('../services/receiptService');
+const sms = require('../services/smsService');
 
 const fail = (message, status) =>
     Object.assign(new Error(message), { status });
@@ -113,6 +114,7 @@ async function describe(sale, withPayInfo = false) {
         },
         payment,
         invoice: invoice && {
+            id: invoice.id,
             number: invoice.invoice_number,
             status: invoice.fiscalization_status,
             kra_receipt_number: invoice.kra_receipt_number
@@ -150,6 +152,33 @@ r.get('/simulation', (q, s) => {
     s.json({ mode: simulationMode() });
 });
 
+// Who is signed in: name, masked KRA PIN and masked registered phone.
+r.get('/profile', auth, wrap(async (q, s) => {
+    const C = require('../services/cryptoService');
+    const buyer = (
+        await db.query(
+            `SELECT b.id, b.kra_pin, u.full_name
+             FROM buyers b JOIN users u ON u.id = b.user_id
+             WHERE b.user_id = $1`,
+            [q.user.sub]
+        )
+    ).rows[0];
+    if (!buyer) throw fail('Buyer account not found. Sign in with a buyer account.', 404);
+    const phone = (
+        await db.query(
+            `SELECT phone_encrypted FROM buyer_phones
+             WHERE buyer_id = $1 AND status = 'ACTIVE'
+             ORDER BY verified_at DESC NULLS LAST, created_at DESC LIMIT 1`,
+            [buyer.id]
+        )
+    ).rows[0];
+    const pin = String(buyer.kra_pin || '');
+    s.json({
+        name: buyer.full_name || 'Buyer',
+        pin_masked: pin ? pin.slice(0, 3) + '*****' + pin.slice(-2) : null,
+        phone_masked: phone ? C.mask(C.dec(phone.phone_encrypted)) : null
+    });
+}));
 r.get('/orders', auth, wrap(async (q, s) => {
     const buyerId = await buyerIdFor(q.user.sub);
 
@@ -175,6 +204,31 @@ r.get('/orders/:id/status', auth, wrap(async (q, s) => {
     const sale = await loadOrder(q.params.id, buyerId);
 
     s.json(await describe(sale, true));
+}));
+
+// Buyer asks for their own receipt link by SMS: to their registered phone,
+// or to another number they type in.
+r.post('/receipts/:invoiceId/sms', auth, wrap(async (q, s) => {
+    const buyerId = await buyerIdFor(q.user.sub);
+
+    const owned = (
+        await db.query(
+            `SELECT i.id
+             FROM invoices i
+             JOIN sales s ON s.id = i.sale_id
+             WHERE i.id = $1
+               AND s.buyer_id = $2`,
+            [q.params.invoiceId, buyerId]
+        )
+    ).rows[0];
+
+    if (!owned) {
+        throw fail('Receipt not found', 404);
+    }
+
+    const phone = q.body && q.body.phone ? String(q.body.phone) : null;
+
+    s.json(await sms.sendReceiptSms(owned.id, { phone }));
 }));
 
 r.post('/orders/:id/simulate-payment', auth, wrap(async (q, s) => {
