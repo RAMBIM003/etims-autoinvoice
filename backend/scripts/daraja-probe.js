@@ -10,7 +10,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   const tests = [['600980', 'https://mydomain.com'], ['600978', 'https://mydomain.com'], ['600980', tunnel], ['600978', tunnel]];
   for (const [shortcode, root] of tests) {
     const r = await fetch(base + '/mpesa/c2b/v2/registerurl', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ShortCode: shortcode, ResponseType: 'Completed', ConfirmationURL: root + '/api/pay/c2b/confirmation', ValidationURL: root + '/api/pay/c2b/validation' }) });
+      body: JSON.stringify({ ShortCode: shortcode, ResponseType: 'Completed', ConfirmationURL: root + '/api/pay/c2b/' + encodeURIComponent(process.env.MPESA_CALLBACK_TOKEN || '') + '/confirmation', ValidationURL: root + '/api/pay/c2b/' + encodeURIComponent(process.env.MPESA_CALLBACK_TOKEN || '') + '/validation' }) });
     console.log(shortcode, root, '->', r.status, (await r.text()).replace(/\s+/g, ' ').slice(0, 220));
     await wait(3000);
   }
