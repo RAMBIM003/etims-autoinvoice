@@ -174,7 +174,7 @@ r.post('/c2b', auth, requireEnabled, wrap(async (q, s) => {
     };
 
     const response = await fetch(
-        `http://127.0.0.1:${process.env.PORT || 5000}/api/pay/c2b/confirmation`,
+        `http://127.0.0.1:${process.env.PORT || 5000}${require('../services/mpesaService').callbackPath('confirmation')}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -31,7 +31,6 @@ async function token() {
   const raw = await r.text();
 
   console.log('KRA TOKEN HTTP:', r.status);
-  console.log('KRA TOKEN RAW RESPONSE:', raw);
 
   let j = {};
   try {
@@ -89,7 +88,6 @@ async function validatePin(pin) {
   const raw = await r.text();
 
   console.log('KRA PIN CHECK HTTP:', r.status);
-  console.log('KRA PIN CHECK RAW RESPONSE:', raw);
 
   let j = {};
   try {

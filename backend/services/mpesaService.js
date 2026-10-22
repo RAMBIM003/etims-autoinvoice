@@ -30,6 +30,8 @@ async function token() {
 
 // Daraja rejects callback URLs containing words like "mpesa",
 // so the paths use /api/pay/c2b
+const callbackPath = kind => '/api/pay/c2b/' + encodeURIComponent(process.env.MPESA_CALLBACK_TOKEN || '') + '/' + kind;
+
 async function registerUrls(shortcode) {
     const pub = process.env.PUBLIC_BASE_URL;
 
@@ -47,8 +49,8 @@ async function registerUrls(shortcode) {
             body: JSON.stringify({
                 ShortCode: shortcode,
                 ResponseType: 'Completed',
-                ConfirmationURL: pub + '/api/pay/c2b/confirmation',
-                ValidationURL: pub + '/api/pay/c2b/validation'
+                ConfirmationURL: pub + callbackPath('confirmation'),
+                ValidationURL: pub + callbackPath('validation')
             })
         });
 
@@ -108,4 +110,4 @@ async function simulateC2B({ shortcode, amount, billRef }) {
     }
 }
 
-module.exports = { registerUrls, simulateC2B };
+module.exports = { registerUrls, simulateC2B, callbackPath };
