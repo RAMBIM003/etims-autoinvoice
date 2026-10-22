@@ -267,41 +267,4 @@ r.post('/c2b/confirmation', wrap(async (q, s) => {
     });
 }));
 
-r.get('/payments', wrap(async (q, s) => {
-    const result = await db.query(
-        `SELECT
-            p.*,
-            mt.trans_id,
-            mt.business_shortcode,
-            mt.bill_ref_number,
-            mt.payer_name,
-            mt.trans_time
-         FROM payments p
-         LEFT JOIN mpesa_transactions mt
-            ON mt.id = p.mpesa_transaction_id
-         ORDER BY p.created_at DESC
-         LIMIT 200`
-    );
-
-    s.json({
-        payments: result.rows
-    });
-}));
-
-r.post('/c2b/register', wrap(async (q, s) => {
-    const shortcode = String(q.body?.shortcode || '').trim();
-
-    if (!/^\d{5,7}$/.test(shortcode)) {
-        throw fail('Invalid shortcode', 400);
-    }
-
-    const result = await mpesa.registerUrls(shortcode);
-
-    if (!result.ok) {
-        throw fail(result.error || 'Daraja registration failed', 502);
-    }
-
-    s.json(result);
-}));
-
 module.exports = r;

@@ -1,4 +1,6 @@
+const crypto = require('crypto');
 const db = require('../db');
+const C = require('./cryptoService');
 
 const tokens = s =>
     String(s || '')
@@ -10,19 +12,91 @@ const tokens = s =>
 
 const nameKey = s => tokens(s).sort().join(' ');
 
-// "2547 ***** 126" -> "126"
 const last3 = value => {
     const digits = String(value || '').replace(/\D/g, '');
     return digits.length >= 3 ? digits.slice(-3) : null;
 };
 
-// LINKED only when exactly one consenting buyer matches. Otherwise AMBIGUOUS, NONE or NO_DATA.
+// A SHA-256 hex value (64 characters) is a hashed MSISDN.
+const isHash = value => /^[a-f0-9]{64}$/i.test(String(value || '').trim());
+
+// SHA-256 of the normalised number, e.g. 254768670493.
+const phoneHash = phone =>
+    crypto.createHash('sha256').update(C.norm(phone)).digest('hex');
+
+// Fill in hashes for buyer phones registered before migration 009.
+async function syncPhoneHashes(c) {
+    const rows = (
+        await c.query(`SELECT id, phone_encrypted FROM buyer_phones WHERE msisdn_sha256 IS NULL`)
+    ).rows;
+
+    for (const r of rows) {
+        await c.query(
+            `UPDATE buyer_phones SET msisdn_sha256 = $1 WHERE id = $2`,
+            [phoneHash(C.dec(r.phone_encrypted)), r.id]
+        );
+    }
+}
+
+// Returns { status, buyerId?, method, detail }.
+// status: LINKED | AMBIGUOUS | NONE | NO_DATA
 async function findBuyer(c, fullName, msisdn) {
     const key = nameKey(fullName);
+
+    if (isHash(msisdn)) {
+        await syncPhoneHashes(c);
+
+        const rows = (
+            await c.query(
+                `SELECT b.id, b.mpesa_name_key
+                 FROM buyer_phones p
+                 JOIN buyers b ON b.id = p.buyer_id
+                 WHERE p.msisdn_sha256 = $1
+                   AND p.status = 'ACTIVE'
+                   AND b.mpesa_consent_at IS NOT NULL`,
+                [String(msisdn).trim().toLowerCase()]
+            )
+        ).rows;
+
+        if (rows.length === 1) {
+            const sameName = rows[0].mpesa_name_key === key;
+            return {
+                status: 'LINKED',
+                buyerId: rows[0].id,
+                method: sameName ? 'HASH_NAME' : 'HASH',
+                detail: sameName
+                    ? 'phone hash and name match'
+                    : 'phone hash matches; name differs, flagged for review'
+            };
+        }
+
+        if (rows.length > 1) {
+            const named = rows.filter(r => r.mpesa_name_key === key);
+
+            if (named.length === 1) {
+                return {
+                    status: 'LINKED',
+                    buyerId: named[0].id,
+                    method: 'HASH_NAME',
+                    detail: 'several buyers share this phone; name picked one'
+                };
+            }
+
+            return {
+                status: 'AMBIGUOUS',
+                method: 'HASH',
+                detail: `${rows.length} buyers share this phone; not linked`
+            };
+        }
+
+        return { status: 'NONE', method: 'HASH', detail: 'no consenting buyer has this phone' };
+    }
+
+    // Masked fallback: full name plus last 3 digits.
     const digits = last3(msisdn);
 
     if (!key || !digits) {
-        return { status: 'NO_DATA', detail: 'payer name or number missing' };
+        return { status: 'NO_DATA', method: 'NAME_LAST3', detail: 'payer name or number missing' };
     }
 
     const rows = (
@@ -39,15 +113,16 @@ async function findBuyer(c, fullName, msisdn) {
         return {
             status: 'LINKED',
             buyerId: rows[0].id,
-            detail: `M-Pesa name and last digits ${digits}`
+            method: 'NAME_LAST3',
+            detail: `name and last digits ${digits}`
         };
     }
 
     if (rows.length > 1) {
-        return { status: 'AMBIGUOUS', detail: `${rows.length} buyers match; not linked` };
+        return { status: 'AMBIGUOUS', method: 'NAME_LAST3', detail: `${rows.length} buyers match; not linked` };
     }
 
-    return { status: 'NONE', detail: 'no buyer matches' };
+    return { status: 'NONE', method: 'NAME_LAST3', detail: 'no buyer matches' };
 }
 
 // Runs after a matched payment, before the KRA invoice is signed.
@@ -79,11 +154,11 @@ async function linkSaleFromPayment(paymentId) {
             await c.query(
                 `UPDATE sales
                  SET buyer_id = $1,
-                     buyer_link_method = 'MPESA_NAME_PHONE',
-                     buyer_link_detail = $2,
+                     buyer_link_method = $2,
+                     buyer_link_detail = $3,
                      updated_at = now()
-                 WHERE id = $3 AND buyer_id IS NULL`,
-                [m.buyerId, m.detail, row.sale_id]
+                 WHERE id = $4 AND buyer_id IS NULL`,
+                [m.buyerId, m.method, m.detail, row.sale_id]
             );
         } else {
             await c.query(
@@ -100,9 +175,8 @@ async function linkSaleFromPayment(paymentId) {
     });
 }
 
-// Runs when a buyer registers or sets their M-Pesa name. Links earlier matched
-// payments that have no buyer and that match this buyer uniquely.
-// Signed invoices get the link for display, but their buyer PIN is not added.
+// Runs when a buyer registers or sets their M-Pesa name: links earlier payments
+// that now match this buyer uniquely.
 async function relinkForBuyer(buyerId) {
     return db.tx(async c => {
         const candidates = (
@@ -141,7 +215,7 @@ async function relinkForBuyer(buyerId) {
                  WHERE id = $4 AND buyer_id IS NULL`,
                 [
                     buyerId,
-                    signed ? 'MPESA_NAME_PHONE_AFTER_SIGNING' : 'MPESA_NAME_PHONE',
+                    signed ? `${m.method}_AFTER_SIGNING` : m.method,
                     signed
                         ? `${m.detail}; linked after KRA signing, buyer PIN not on invoice`
                         : m.detail,
@@ -156,4 +230,12 @@ async function relinkForBuyer(buyerId) {
     });
 }
 
-module.exports = { linkSaleFromPayment, relinkForBuyer, findBuyer, nameKey, last3 };
+module.exports = {
+    linkSaleFromPayment,
+    relinkForBuyer,
+    findBuyer,
+    phoneHash,
+    isHash,
+    nameKey,
+    last3
+};
