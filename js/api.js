@@ -1,5 +1,5 @@
 const API = {
-    BASE: 'http://localhost:5000/api',
+    BASE: '/api',
 
     async req(path, options = {}) {
         const requestOptions = {
