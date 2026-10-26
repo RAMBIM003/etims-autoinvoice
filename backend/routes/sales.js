@@ -211,7 +211,9 @@ r.post('/sales', wrap(async (q, s) => {
         subtotal = Number(subtotal.toFixed(2));
         tax = Number(tax.toFixed(2));
 
-        const total = Number((subtotal + tax).toFixed(2));
+        const exactTotal = Number((subtotal + tax).toFixed(2));
+        const total = Math.round(exactTotal);
+        tax = Number((tax + (total - exactTotal)).toFixed(2));
 
         const saleResult = await c.query(
             `INSERT INTO sales (

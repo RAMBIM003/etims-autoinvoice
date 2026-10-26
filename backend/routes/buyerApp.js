@@ -283,7 +283,7 @@ r.post('/orders/:id/simulate-payment', auth, wrap(async (q, s) => {
     const transId = 'SIM' + Math.random().toString(16).slice(2, 10).toUpperCase();
 
     const response = await fetch(
-        `http://127.0.0.1:${process.env.PORT || 5000}/api/pay/c2b/confirmation`,
+        `http://127.0.0.1:${process.env.PORT || 5000}${require('../services/mpesaService').callbackPath('confirmation')}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

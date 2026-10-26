@@ -1,4 +1,15 @@
+const crypto = require('crypto');
 const r = require('express').Router();
+
+// Safaricom cannot send auth headers, so the callback paths carry a secret token.
+const checkToken = (q, s, next) => {
+    const want = process.env.MPESA_CALLBACK_TOKEN || '';
+    const got = String(q.params.token || '');
+    const ok = want.length > 0 && got.length === want.length &&
+        crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
+    if (!ok) return s.status(403).json({ ResultCode: 1, ResultDesc: 'Forbidden' });
+    next();
+};
 const db = require('../db');
 const mpesa = require('../services/mpesaService');
 const tx = require('../services/transactionService');
@@ -8,14 +19,14 @@ const wrap = require('../middleware/wrap');
 const fail = (message, status) =>
     Object.assign(new Error(message), { status });
 
-r.post('/c2b/validation', (q, s) => {
+r.post('/c2b/:token/validation', checkToken, (q, s) => {
     s.json({
         ResultCode: 0,
         ResultDesc: 'Accepted'
     });
 });
 
-r.post('/c2b/confirmation', wrap(async (q, s) => {
+r.post('/c2b/:token/confirmation', checkToken, wrap(async (q, s) => {
     const body = q.body || {};
     console.log('C2B confirmation received:', JSON.stringify(body));
     const transId = String(body.TransID || '').trim();
@@ -265,43 +276,6 @@ r.post('/c2b/confirmation', wrap(async (q, s) => {
         ResultCode: 0,
         ResultDesc: 'Accepted'
     });
-}));
-
-r.get('/payments', wrap(async (q, s) => {
-    const result = await db.query(
-        `SELECT
-            p.*,
-            mt.trans_id,
-            mt.business_shortcode,
-            mt.bill_ref_number,
-            mt.payer_name,
-            mt.trans_time
-         FROM payments p
-         LEFT JOIN mpesa_transactions mt
-            ON mt.id = p.mpesa_transaction_id
-         ORDER BY p.created_at DESC
-         LIMIT 200`
-    );
-
-    s.json({
-        payments: result.rows
-    });
-}));
-
-r.post('/c2b/register', wrap(async (q, s) => {
-    const shortcode = String(q.body?.shortcode || '').trim();
-
-    if (!/^\d{5,7}$/.test(shortcode)) {
-        throw fail('Invalid shortcode', 400);
-    }
-
-    const result = await mpesa.registerUrls(shortcode);
-
-    if (!result.ok) {
-        throw fail(result.error || 'Daraja registration failed', 502);
-    }
-
-    s.json(result);
 }));
 
 module.exports = r;

@@ -8,7 +8,7 @@ const root = String(rootRaw || '').trim().replace(/\/+$/, '');
   console.log('token ok:', !!token);
   for (const code of codes) {
     const r = await fetch(base + '/mpesa/c2b/v1/registerurl', { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ShortCode: code, ResponseType: 'Completed', ConfirmationURL: root + '/api/pay/c2b/confirmation', ValidationURL: root + '/api/pay/c2b/validation' }) });
+      body: JSON.stringify({ ShortCode: code, ResponseType: 'Completed', ConfirmationURL: root + '/api/pay/c2b/' + encodeURIComponent(process.env.MPESA_CALLBACK_TOKEN || '') + '/confirmation', ValidationURL: root + '/api/pay/c2b/' + encodeURIComponent(process.env.MPESA_CALLBACK_TOKEN || '') + '/validation' }) });
     console.log(code, '->', r.status, (await r.text()).replace(/\s+/g, ' ').slice(0, 160));
     await new Promise(x => setTimeout(x, 2500));
   }

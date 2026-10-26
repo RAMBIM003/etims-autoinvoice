@@ -72,7 +72,7 @@ r.post('/kra/validate-pin', wrap(async (q, s) => {
     });
 }));
 
-r.post('/kra/connect', wrap(async (q, s) => {
+r.post('/kra/connect', auth, wrap(async (q, s) => {
     const pin = String(q.body?.pin || '').trim().toUpperCase();
 
     if (!/^[AP]\d{9}[A-Z]$/.test(pin)) {
