@@ -1,3 +1,4 @@
+const buyerLink = require('../services/buyerLinkService');
 
 const r = require('express').Router();
 const bcrypt = require('bcryptjs');
@@ -58,6 +59,7 @@ r.post('/buyer/register', wrap(async (q, s) => {
 
         const phoneHash = C.phoneHash(b.phone);
         const encryptedPhone = C.enc(C.norm(b.phone));
+        const msisdnSha256 = buyerLink.phoneHash(b.phone);
         const passwordHash = await bcrypt.hash(password, 10);
 
         const user = (
@@ -102,10 +104,11 @@ r.post('/buyer/register', wrap(async (q, s) => {
                 buyer_id,
                 phone_hash,
                 phone_encrypted,
+                msisdn_sha256,
                 verified_at
             )
-            VALUES ($1, $2, $3, now())`,
-            [buyer.id, phoneHash, encryptedPhone]
+            VALUES ($1, $2, $3, $4, now())`,
+            [buyer.id, phoneHash, encryptedPhone, msisdnSha256]
         );
 
         return user.id;

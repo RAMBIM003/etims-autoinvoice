@@ -167,14 +167,14 @@ r.post('/c2b', auth, requireEnabled, wrap(async (q, s) => {
         InvoiceNumber: '',
         OrgAccountBalance: '0.00',
         ThirdPartyTransID: '',
-        MSISDN: String(b.phone || '2547 ***** 126').slice(0, 20),
+        MSISDN: String(b.phone || '2547 ***** 126').slice(0, 100),
         FirstName: String(b.firstName || 'JOHN').slice(0, 30),
         MiddleName: '',
         LastName: String(b.lastName || '').slice(0, 30)
     };
 
     const response = await fetch(
-        `http://127.0.0.1:${process.env.PORT || 5000}/api/pay/c2b/confirmation`,
+        `http://127.0.0.1:${process.env.PORT || 5000}${require('../services/mpesaService').callbackPath('confirmation')}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
