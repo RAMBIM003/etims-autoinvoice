@@ -43,6 +43,12 @@ Every colour is a CSS variable in `src/app/globals.css`: light values on
 variable names (`--background`, `--primary`, `--border`, …) are defined from the
 same palette, so the components are on brand without per-component overrides.
 
+**Light is the default and does not follow the device.** A viewer on a dark
+phone still opens the app in light; the toggle in the top bar is what switches
+it, and that choice is remembered. To follow the device instead, set
+`defaultTheme="system"` and `enableSystem` on the `ThemeProvider` in
+`src/app/layout.tsx`.
+
 To rebrand, edit the brand ramp at the top of that file. Nothing else needs
 touching.
 

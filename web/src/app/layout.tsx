@@ -29,17 +29,16 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-    themeColor: [
-        { media: "(prefers-color-scheme: light)", color: "#f4f5f8" },
-        { media: "(prefers-color-scheme: dark)", color: "#0a0c10" },
-    ],
+    /* Light is the default, so the browser chrome matches the light canvas.
+       A viewer who switches to dark keeps this; it only tints the URL bar. */
+    themeColor: "#f4f5f8",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en" suppressHydrationWarning>
             <body className={`${inter.variable} ${jakarta.variable} font-sans`}>
-                <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+                <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} disableTransitionOnChange>
                     {children}
                     <Toaster />
                 </ThemeProvider>
