@@ -1,0 +1,262 @@
+/* tokens.css: the single source of truth for colour, type, spacing and elevation.
+   Load this FIRST, before theme.css and merchant.css.
+
+   Every colour in the app resolves to a token defined here. Light values live on
+   bare :root; the two blocks at the bottom redefine the same names for dark mode,
+   so a component rule never has to know which theme is showing.
+
+   To rebrand: edit the BRAND RAMP below. Nothing else needs touching. */
+
+/* ---------- Brand ramp (edit here to rebrand) ---------- */
+:root{
+    --red-50:#fff1f2;
+    --red-100:#fdecee;
+    --red-200:#fbd9de;
+    --red-300:#f5a3ae;
+    --red-400:#f0384b;
+    --red-500:#d9162b;   /* the brand red */
+    --red-600:#b81224;
+    --red-700:#94101e;
+    --red-800:#6e0d17;
+    --red-900:#4a0a10;
+
+    /* Secondary accents. Gold carries "money", teal carries "verified with KRA". */
+    --gold-400:#f0b857;
+    --gold-500:#e9a23b;
+    --gold-600:#c4852b;
+    --teal-400:#2dd4bf;
+    --teal-500:#0e9f8e;
+    --teal-600:#0b7f71;
+}
+
+/* ---------- Light theme ---------- */
+:root{
+    color-scheme:light;
+
+    /* Surfaces, from the page backdrop up to the raised card */
+    --canvas:#f4f5f8;
+    --surface:#fff;
+    --surface-2:#f8f9fc;
+    --surface-3:#f0f2f6;
+    --surface-hover:#fff4f5;
+
+    /* "Inverse" surfaces: the sidebar, the hero banner, the table head.
+       These stay dark in light mode by design, and lift slightly in dark mode
+       so they still separate from the near-black canvas. */
+    --inverse:#0e1015;
+    --inverse-2:#191c23;
+    --on-inverse:#fff;
+    --on-inverse-2:#c3c9d4;
+    --on-inverse-3:#8b94a4;
+
+    /* Dark bands: the hero banner and the table head. In light mode these are
+       near-black for contrast; in dark mode they lift above the canvas instead. */
+    --band:#0e1015;
+    --band-2:#191c23;
+    --on-band:#fff;
+    --on-band-2:#c3c9d4;
+    --on-band-3:#a7afbd;
+
+    /* Borders */
+    --line:#e8ebf1;
+    --line-strong:#d8dde7;
+    --line-inverse:rgba(255,255,255,.09);
+
+    /* Text */
+    --ink:#0f172a;
+    --ink-2:#475063;
+    --mut:#6b7385;
+
+    /* Brand, resolved per theme so contrast holds on either canvas */
+    --brand:var(--red-500);
+    --brand-hover:var(--red-600);
+    --brand-soft:var(--red-100);
+    --brand-soft-hover:var(--red-200);
+    --brand-text:var(--red-500);
+    --on-brand:#fff;
+    --brand-ring:rgba(217,22,43,.4);
+    --brand-glow:rgba(217,22,43,.3);
+
+    /* Semantic status: a text colour and the tint it sits on */
+    --ok:#166534;            --ok-soft:#e2f6ea;
+    --warn:#92400e;          --warn-soft:#fff3d6;
+    --bad:#991b1b;           --bad-soft:#fee2e2;
+    --info:#1d4ed8;          --info-soft:#e4ebff;
+    --ok-line:#cfe9d8;
+    --warn-line:#f6d9a0;
+    --bad-line:#fecaca;
+
+    /* Data visualisation. charts.js reads these at draw time. */
+    --chart-1:var(--red-500);
+    --chart-2:#111827;
+    --chart-3:var(--teal-500);
+    --chart-4:var(--gold-500);
+    --chart-5:#6366f1;
+    --chart-grid:#e9ecf2;
+    --chart-track:#eef1f6;
+    --chart-label:#64748b;
+
+    /* Elevation. Dark mode needs more opacity to register at all. */
+    --sh-1:0 4px 14px rgba(15,23,42,.04);
+    --sh-2:0 8px 24px rgba(15,23,42,.08);
+    --sh-3:0 26px 60px rgba(15,23,42,.24);
+    --sh-4:0 30px 80px rgba(15,23,42,.4);
+    --scrim:rgba(10,12,18,.6);
+
+    /* Type */
+    --font-body:Inter,'Segoe UI',system-ui,-apple-system,sans-serif;
+    --font-display:'Plus Jakarta Sans',Inter,'Segoe UI',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono',Consolas,ui-monospace,monospace;
+
+    /* Radii */
+    --r-sm:8px;
+    --r-md:10px;
+    --r-lg:12px;
+    --r-xl:16px;
+    --r-2xl:18px;
+    --r-pill:99px;
+
+    /* Motion */
+    --ease:cubic-bezier(.2,.7,.2,1);
+    --t-fast:.15s;
+    --t-base:.22s;
+}
+
+/* ---------- Dark theme ----------
+   Applied when the viewer's OS asks for dark and they have not pinned light,
+   and again on an explicit choice so the in-app toggle wins either way. */
+@media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+        color-scheme:dark;
+
+        --canvas:#0a0c10;
+        --surface:#13161d;
+        --surface-2:#181c24;
+        --surface-3:#1e232c;
+        --surface-hover:#241a1f;
+
+        --inverse:#13161d;
+        --inverse-2:#1e232c;
+        --on-inverse:#f2f4f8;
+        --on-inverse-2:#b4bcca;
+        --on-inverse-3:#8a93a3;
+
+        --band:#1e232c;
+        --band-2:#262c37;
+        --on-band:#f2f4f8;
+        --on-band-2:#b4bcca;
+        --on-band-3:#8a93a3;
+
+        --line:#262c37;
+        --line-strong:#333a47;
+        --line-inverse:rgba(255,255,255,.07);
+
+        --ink:#e9ecf2;
+        --ink-2:#b4bcca;
+        --mut:#8a93a3;
+
+        --brand:var(--red-400);
+        --brand-hover:#ff5a6b;
+        --brand-soft:rgba(240,56,75,.14);
+        --brand-soft-hover:rgba(240,56,75,.22);
+        --brand-text:#ff7b88;
+        --brand-ring:rgba(240,56,75,.45);
+        --brand-glow:rgba(240,56,75,.26);
+
+        --ok:#4ade80;            --ok-soft:rgba(74,222,128,.13);
+        --warn:#fbbf24;          --warn-soft:rgba(251,191,36,.13);
+        --bad:#ff8d99;           --bad-soft:rgba(255,141,153,.13);
+        --info:#7fa8ff;          --info-soft:rgba(127,168,255,.13);
+        --ok-line:rgba(74,222,128,.28);
+        --warn-line:rgba(251,191,36,.28);
+        --bad-line:rgba(255,141,153,.28);
+
+        --chart-1:var(--red-400);
+        --chart-2:#e9ecf2;
+        --chart-3:var(--teal-400);
+        --chart-4:var(--gold-400);
+        --chart-5:#a5b4fc;
+        --chart-grid:#262c37;
+        --chart-track:#1e232c;
+        --chart-label:#8a93a3;
+
+        --sh-1:0 4px 14px rgba(0,0,0,.4);
+        --sh-2:0 8px 24px rgba(0,0,0,.5);
+        --sh-3:0 26px 60px rgba(0,0,0,.66);
+        --sh-4:0 30px 80px rgba(0,0,0,.76);
+        --scrim:rgba(0,0,0,.68);
+    }
+}
+
+:root[data-theme="dark"]{
+    color-scheme:dark;
+
+    --canvas:#0a0c10;
+    --surface:#13161d;
+    --surface-2:#181c24;
+    --surface-3:#1e232c;
+    --surface-hover:#241a1f;
+
+    --inverse:#13161d;
+    --inverse-2:#1e232c;
+    --on-inverse:#f2f4f8;
+    --on-inverse-2:#b4bcca;
+    --on-inverse-3:#8a93a3;
+
+    --band:#1e232c;
+    --band-2:#262c37;
+    --on-band:#f2f4f8;
+    --on-band-2:#b4bcca;
+    --on-band-3:#8a93a3;
+
+    --line:#262c37;
+    --line-strong:#333a47;
+    --line-inverse:rgba(255,255,255,.07);
+
+    --ink:#e9ecf2;
+    --ink-2:#b4bcca;
+    --mut:#8a93a3;
+
+    --brand:var(--red-400);
+    --brand-hover:#ff5a6b;
+    --brand-soft:rgba(240,56,75,.14);
+    --brand-soft-hover:rgba(240,56,75,.22);
+    --brand-text:#ff7b88;
+    --brand-ring:rgba(240,56,75,.45);
+    --brand-glow:rgba(240,56,75,.26);
+
+    --ok:#4ade80;            --ok-soft:rgba(74,222,128,.13);
+    --warn:#fbbf24;          --warn-soft:rgba(251,191,36,.13);
+    --bad:#ff8d99;           --bad-soft:rgba(255,141,153,.13);
+    --info:#7fa8ff;          --info-soft:rgba(127,168,255,.13);
+    --ok-line:rgba(74,222,128,.28);
+    --warn-line:rgba(251,191,36,.28);
+    --bad-line:rgba(255,141,153,.28);
+
+    --chart-1:var(--red-400);
+    --chart-2:#e9ecf2;
+    --chart-3:var(--teal-400);
+    --chart-4:var(--gold-400);
+    --chart-5:#a5b4fc;
+    --chart-grid:#262c37;
+    --chart-track:#1e232c;
+    --chart-label:#8a93a3;
+
+    --sh-1:0 4px 14px rgba(0,0,0,.4);
+    --sh-2:0 8px 24px rgba(0,0,0,.5);
+    --sh-3:0 26px 60px rgba(0,0,0,.66);
+    --sh-4:0 30px 80px rgba(0,0,0,.76);
+    --scrim:rgba(0,0,0,.68);
+}
+
+/* Legacy aliases. Older rules and inline <style> blocks still say var(--red). */
+:root{--red:var(--brand);--red-d:var(--brand-hover);--bg:var(--canvas);--side:var(--inverse)}
+
+/* Paint the canvas before any stylesheet below gets a say, so a dark viewer
+   never sees a white flash while the rest of the CSS arrives. */
+html{background:var(--canvas)}
+
+/* Honour the system preference for less movement everywhere. */
+@media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}

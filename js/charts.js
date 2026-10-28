@@ -46,6 +46,23 @@ window.Charts = (function () {
         return d;
     }
 
+    // Chart colours live in tokens.css so the drawing follows the active theme.
+    // Read at draw time, never cached: the theme can change between draws.
+    const tok = (name, fallback) => {
+        const v = getComputedStyle(document.documentElement)
+            .getPropertyValue('--' + name).trim();
+
+        return v || fallback;
+    };
+
+    const ink = () => tok('chart-2', '#111827');
+    const grid = () => tok('chart-grid', '#e9ecf2');
+    const track = () => tok('chart-track', '#eef1f6');
+    const axis = () => tok('chart-label', '#64748b');
+    const brand = () => tok('chart-1', '#d9162b');
+    const surface = () => tok('surface', '#fff');
+    const heading = () => tok('ink', '#0f172a');
+
     const nice = v => {
         const p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
         return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
@@ -63,6 +80,14 @@ window.Charts = (function () {
         }), 150);
     });
 
+    const redrawAll = () => live.forEach(el => {
+        if (!el.isConnected) { live.delete(el); return; }
+        lines(el, ...el._a);
+    });
+
+    // A theme change repaints the chart text, grid and lines.
+    window.addEventListener('themechange', redrawAll);
+
     // Two smooth lines over a list of days: sales (left axis, red, soft fill)
     // and orders (right axis, dark).
     function lines(el, labels, sales, orders) {
@@ -79,13 +104,13 @@ window.Charts = (function () {
 
         let s = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" class="chart" role="img" aria-label="Sales overview">` +
             `<defs><linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">` +
-            `<stop offset="0" stop-color="#d9162b" stop-opacity=".22"/><stop offset="1" stop-color="#d9162b" stop-opacity="0"/></linearGradient></defs>`;
+            `<stop offset="0" stop-color="${brand()}" stop-opacity=".24"/><stop offset="1" stop-color="${brand()}" stop-opacity="0"/></linearGradient></defs>`;
 
         for (let i = 0; i <= 4; i++) {
             const yy = T + ph * (1 - i / 4);
-            s += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="#e9ecf2"/>` +
-                `<text x="${L - 10}" y="${yy + 4}" text-anchor="end" font-size="12" fill="#64748b">${kfmt(ms * i / 4)}</text>` +
-                `<text x="${W - R + 10}" y="${yy + 4}" text-anchor="start" font-size="12" fill="#64748b">${Math.round(mo * i / 4)}</text>`;
+            s += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="${grid()}"/>` +
+                `<text x="${L - 10}" y="${yy + 4}" text-anchor="end" font-size="12" fill="${axis()}">${kfmt(ms * i / 4)}</text>` +
+                `<text x="${W - R + 10}" y="${yy + 4}" text-anchor="start" font-size="12" fill="${axis()}">${Math.round(mo * i / 4)}</text>`;
         }
 
         const sp = sales.map((v, i) => [x(i), y(v)]);
@@ -95,20 +120,20 @@ window.Charts = (function () {
         if (sp.length > 1) {
             s += `<path d="${sd} L${sp[sp.length - 1][0]},${base} L${sp[0][0]},${base}Z" fill="url(#salesFill)"/>`;
         }
-        s += `<path d="${smooth(op, base)}" fill="none" stroke="#111827" stroke-width="2.5" stroke-linecap="round"/>`;
-        s += `<path d="${sd}" fill="none" stroke="#d9162b" stroke-width="2.8" stroke-linecap="round"/>`;
+        s += `<path d="${smooth(op, base)}" fill="none" stroke="${ink()}" stroke-width="2.5" stroke-linecap="round"/>`;
+        s += `<path d="${sd}" fill="none" stroke="${brand()}" stroke-width="2.8" stroke-linecap="round"/>`;
 
         sales.forEach((v, i) => {
-            s += `<circle cx="${sp[i][0]}" cy="${sp[i][1]}" r="4.5" fill="#fff" stroke="#d9162b" stroke-width="2.4"><title>${labels[i]}: KES ${Number(v).toLocaleString()}</title></circle>`;
+            s += `<circle cx="${sp[i][0]}" cy="${sp[i][1]}" r="4.5" fill="${surface()}" stroke="${brand()}" stroke-width="2.4"><title>${labels[i]}: KES ${Number(v).toLocaleString()}</title></circle>`;
         });
         orders.forEach((v, i) => {
-            s += `<circle cx="${op[i][0]}" cy="${op[i][1]}" r="3.8" fill="#111827"><title>${labels[i]}: ${v} order(s)</title></circle>`;
+            s += `<circle cx="${op[i][0]}" cy="${op[i][1]}" r="3.8" fill="${ink()}"><title>${labels[i]}: ${v} order(s)</title></circle>`;
         });
 
         const every = Math.ceil(n / Math.max(2, Math.floor((W - L - R) / 62)));
         labels.forEach((l, i) => {
             if (i % every === 0) {
-                s += `<text x="${x(i)}" y="${H - 9}" text-anchor="middle" font-size="12" fill="#64748b">${l}</text>`;
+                s += `<text x="${x(i)}" y="${H - 9}" text-anchor="middle" font-size="12" fill="${axis()}">${l}</text>`;
             }
         });
 
@@ -132,7 +157,7 @@ window.Charts = (function () {
             off -= pc;
         });
 
-        el.innerHTML = `<div class="donutwrap"><svg viewBox="0 0 42 42" class="donutsvg"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="#eef1f6" stroke-width="5"/>${c}<text x="21" y="21.5" text-anchor="middle" font-size="7" font-weight="700" fill="#0f172a">${t}</text><text x="21" y="26.5" text-anchor="middle" font-size="3" fill="#64748b">${label || ''}</text></svg><ul class="legend">${parts.map(p => `<li><i style="background:${p.c}"></i>${p.n}<b>${p.v}</b><span>${Math.round(p.v / t * 100)}%</span></li>`).join('')}</ul></div>`;
+        el.innerHTML = `<div class="donutwrap"><svg viewBox="0 0 42 42" class="donutsvg"><circle cx="21" cy="21" r="15.9155" fill="none" stroke="${track()}" stroke-width="5"/>${c}<text x="21" y="21.5" text-anchor="middle" font-size="7" font-weight="700" fill="${heading()}">${t}</text><text x="21" y="26.5" text-anchor="middle" font-size="3" fill="${axis()}">${label || ''}</text></svg><ul class="legend">${parts.map(p => `<li><i style="background:${p.c}"></i>${p.n}<b>${p.v}</b><span>${Math.round(p.v / t * 100)}%</span></li>`).join('')}</ul></div>`;
     }
 
     // Small smooth trend line with a soft fill, used on the stat cards.

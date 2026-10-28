@@ -5,19 +5,24 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>My purchases | eTIMS AutoInvoice</title>
 <!-- Same stylesheets as the merchant dashboard, so both sides match -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/theme.css">
 <link rel="stylesheet" href="css/merchant.css">
+<script src="js/theme.js"></script>
 <style>
     /* Buyer-only additions */
-    .badge.pin{background:rgba(255,255,255,.1);color:#cbd5e1}
-    .primary.sm{padding:6px 11px;font-size:12px;border-radius:8px}
+    .badge.pin{background:var(--line-inverse);color:var(--on-inverse-2)}
+    .primary.sm{padding:6px 11px;font-size:12px;border-radius:var(--r-sm)}
     .lk{max-width:680px}
     .lk p{margin:0 0 10px;font-size:14px;line-height:1.55}
     .lk-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
-    .lk-row input[type=text]{flex:1;min-width:200px;max-width:380px;padding:10px 12px;border-radius:10px;font-size:14px}
-    .lc{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:13px;line-height:1.5;color:#374151;cursor:pointer}
-    .lc input[type=checkbox]{flex:none;width:18px;height:18px;margin:2px 0 0;padding:0;accent-color:var(--red)}
-    .rl{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #f0f2f6}
+    .lk-row input[type=text]{flex:1;min-width:0;max-width:380px;padding:10px 12px;border-radius:var(--r-md);font-size:14px}
+    .lc{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:13px;line-height:1.5;color:var(--ink-2);cursor:pointer}
+    .lc input[type=checkbox]{flex:none;width:18px;height:18px;margin:2px 0 0;padding:0;accent-color:var(--brand)}
+    .rl{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}
     .rl:last-child{border-bottom:0;padding-bottom:0}
     .rl .meta{flex:1;min-width:0}
     .rl b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

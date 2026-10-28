@@ -6,7 +6,16 @@
         ['connections', 'Connections', 'link'], ['profile', 'Business Profile', 'store']
     ];
 
-    const RED = '#d9162b', INK = '#111827';
+    // Chart colours come from tokens.css, so they follow the active theme.
+    // Read as functions, not constants: the theme can change while the page is open.
+    const tok = (name, fallback) =>
+        getComputedStyle(document.documentElement)
+            .getPropertyValue('--' + name).trim() || fallback;
+
+    const RED = () => tok('chart-1', '#d9162b');
+    const INK = () => tok('chart-2', '#111827');
+    const WARN = () => tok('chart-4', '#f59e0b');
+    const FAINT = () => tok('line-strong', '#cbd5e1');
     const $ = id => document.getElementById(id);
     const E = v => App.esc(v), M = v => App.money(v);
     const UI = App.ui;
@@ -154,16 +163,16 @@
                 sub: 'Live transaction view for your eTIMS AutoInvoice account.'
             }) + `
         <div class="kpis">
-            ${kpi("Today's sales", 'KES ' + M(last(w.sales)), delta(last(w.sales), prev(w.sales)), w.sales, RED, 'cart')}
-            ${kpi('Orders', S.length, `<span class="delta muted">${last(w.orders)} today</span>`, w.orders, INK, 'cart')}
-            ${kpi('Matched payments', cnt('MATCHED'), delta(last(m7), prev(m7)), m7, RED, 'card')}
-            ${kpi('Fiscalized invoices', fiscalized, delta(last(f7), prev(f7)), f7, INK, 'file')}
+            ${kpi("Today's sales", 'KES ' + M(last(w.sales)), delta(last(w.sales), prev(w.sales)), w.sales, RED(), 'cart')}
+            ${kpi('Orders', S.length, `<span class="delta muted">${last(w.orders)} today</span>`, w.orders, INK(), 'cart')}
+            ${kpi('Matched payments', cnt('MATCHED'), delta(last(m7), prev(m7)), m7, RED(), 'card')}
+            ${kpi('Fiscalized invoices', fiscalized, delta(last(f7), prev(f7)), f7, INK(), 'file')}
         </div>
         <div class="charts">
             <section class="panel">
                 <div class="ph"><span class="ic">${Charts.icon('chart')}</span><h3>Sales overview</h3>
                 <select id="rng" aria-label="Date range"><option value="7">Last 7 days</option><option value="30">Last 30 days</option></select></div>
-                <div class="lg"><span><i class="dot" style="background:${RED}"></i>Sales (KES)</span><span><i class="dot" style="background:${INK}"></i>Orders</span></div>
+                <div class="lg"><span><i class="dot" style="background:${RED()}"></i>Sales (KES)</span><span><i class="dot" style="background:${INK()}"></i>Orders</span></div>
                 <div id="c1"></div>
             </section>
             <section class="panel"><div class="ph"><span class="ic">${Charts.icon('pie')}</span><h3>Payments by status</h3></div><div id="c2"></div></section>
@@ -190,10 +199,10 @@
         const known = cnt('MATCHED') + cnt('UNMATCHED') + cnt('AMOUNT_MISMATCH');
 
         Charts.donut($('c2'), [
-            { n: 'Matched', v: cnt('MATCHED'), c: INK },
-            { n: 'Unmatched', v: cnt('UNMATCHED'), c: '#f59e0b' },
-            { n: 'Amount mismatch', v: cnt('AMOUNT_MISMATCH'), c: RED },
-            { n: 'Other', v: P.length - known, c: '#cbd5e1' }
+            { n: 'Matched', v: cnt('MATCHED'), c: INK() },
+            { n: 'Unmatched', v: cnt('UNMATCHED'), c: WARN() },
+            { n: 'Amount mismatch', v: cnt('AMOUNT_MISMATCH'), c: RED() },
+            { n: 'Other', v: P.length - known, c: FAINT() }
         ], 'payments');
     };
 })();

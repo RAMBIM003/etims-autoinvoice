@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>eTIMS Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/merchant.css">
+<script src="js/theme.js"></script>
+<style>
+    /* Page-only furniture for the style guide itself. */
+    .sect{margin:0 0 30px}
+    .sect>h2{
+        display:flex;align-items:baseline;gap:10px;margin:0 0 4px;
+        font-family:var(--font-display);font-size:19px;letter-spacing:-.02em;
+    }
+    .sect>h2 span{
+        font-family:var(--font-mono);font-size:11px;font-weight:600;
+        letter-spacing:.08em;text-transform:uppercase;color:var(--mut);
+    }
+    .sect>p{margin:0 0 14px;max-width:62ch;color:var(--mut);font-size:13.5px;line-height:1.6}
+
+    .swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:10px}
+    .sw{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+    .sw i{display:block;height:52px}
+    .sw div{padding:7px 9px}
+    .sw b{display:block;font-size:12px;line-height:1.3}
+    .sw code{font-family:var(--font-mono);font-size:10.5px;color:var(--mut)}
+
+    .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .typescale>*{margin:0 0 6px}
+    .typescale .lbl{
+        font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);
+    }
+    .note{
+        display:flex;gap:10px;padding:12px 14px;border-radius:var(--r-md);
+        background:var(--surface-2);border:1px solid var(--line);
+        font-size:13px;line-height:1.55;color:var(--ink-2);
+    }
+    .note b{color:var(--ink)}
+    .bp{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+    .bp li{display:flex;gap:12px;align-items:baseline;font-size:13.5px}
+    .bp code{
+        flex:none;min-width:104px;font-family:var(--font-mono);font-size:12px;
+        font-weight:600;color:var(--brand-text);
+    }
+</style>
+</head>
+<body>
+<div class="app">
+    <aside class="side">
+        <div class="brand"><span class="mk">e</span><span>eTIMS AutoInvoice</span></div>
+
+        <div class="bizbox">
+            <span class="biz-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l2-5h14l2 5M3 9h18v11H3zM9 20v-6h6v6"/></svg></span>
+            <div>
+                <div class="biz">Nairobits Supplies</div>
+                <span class="badge">KRA connected</span>
+            </div>
+        </div>
+
+        <nav class="nav">
+            <button type="button" class="active"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 22V12h6v10"/></svg>Design system<span class="chev"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span></button>
+            <button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h15l-2 9H8zM6 6L5 2H2M9 20h.01M18 20h.01"/></svg>Orders</button>
+            <button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18v14H3zM3 10h18"/></svg>Payments</button>
+            <button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16h16V8zM14 2v6h6M8 13h8M8 17h8"/></svg>Invoices</button>
+            <button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8l-9-5-9 5v8l9 5 9-5zM3 8l9 5 9-5M12 13v9"/></svg>Items</button>
+            <button type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>Connections</button>
+        </nav>
+
+        <div class="sysbox">
+            <i class="dot on"></i>
+            <div><b>OSCU online</b><small>Sandbox &middot; branch 01</small></div>
+            <svg class="pulse" viewBox="0 0 48 20" aria-hidden="true"><path d="M0 10h12l4-8 6 16 5-12 3 4h18"/></svg>
+        </div>
+        <button class="out" type="button">Sign out</button>
+    </aside>
+
+    <main class="main">
+        <div class="top">
+            <div class="search">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input id="q" placeholder="Search orders, invoices, payments or reference...">
+            </div>
+
+            <div class="bellwrap">
+                <button class="bell" id="bell" type="button" aria-label="Notifications">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+                    <em>3</em>
+                </button>
+            </div>
+        </div>
+
+        <div class="content">
+            <section class="hero">
+                <span class="hero-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></span>
+                <div class="hero-tx">
+                    <small>Reference / Design system</small>
+                    <h1>One palette, <em>two themes</em></h1>
+                    <p>Every component below is the real thing, styled from tokens.css. Use the moon in the top bar to switch themes.</p>
+                </div>
+                <div class="hero-art">
+                    <svg viewBox="0 0 200 110" aria-hidden="true">
+                        <circle cx="118" cy="62" r="50" fill="var(--brand)" opacity=".18"/>
+                        <rect x="70" y="64" width="16" height="38" rx="4" fill="#e8ebf1"/>
+                        <rect x="94" y="48" width="16" height="54" rx="4" fill="#e8ebf1"/>
+                        <rect x="118" y="30" width="16" height="72" rx="4" fill="var(--brand)"/>
+                        <rect x="142" y="52" width="16" height="50" rx="4" fill="#e8ebf1"/>
+                        <path d="M66 70l30-18 24-22 40 20" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </section>
+
+            <!-- ---------- Colour ---------- -->
+            <section class="sect">
+                <h2>Colour <span>tokens.css</span></h2>
+                <p>Semantic names, not hex values. Each one is defined once for light and redefined for dark, so a component rule never asks which theme is showing. Rebranding means editing the ramp at the top of the file.</p>
+                <div class="swatches" id="swatches"></div>
+            </section>
+
+            <!-- ---------- Type ---------- -->
+            <section class="sect">
+                <h2>Type <span>Plus Jakarta Sans + Inter</span></h2>
+                <p>Plus Jakarta Sans sets headings and figures; Inter carries body text and table data. Money and counts use tabular figures so columns line up as values change.</p>
+                <div class="panel typescale">
+                    <div class="lbl">Hero / clamp(20&ndash;27px) / 800</div>
+                    <h1 style="font-family:var(--font-display)">Today&rsquo;s sales</h1>
+                    <div class="lbl">Card heading / 17px / 700</div>
+                    <h2 style="font-family:var(--font-display);font-size:17px;margin:0">Recent invoices</h2>
+                    <div class="lbl">Body / 13.5px / 400</div>
+                    <p style="margin:0;max-width:62ch">Fiscalized with KRA eTIMS at 14:32 EAT. The buyer receives a receipt link by SMS as soon as the control unit signs the invoice.</p>
+                    <div class="lbl">Figure / 20px / tabular</div>
+                    <b class="amt" style="font-size:20px">KES&nbsp;184,500</b>
+                    <div class="lbl">Mono / reference</div>
+                    <span class="mono">P051234567M &middot; CU-0010294471 &middot; SKJ7HQ2X9L</span>
+                </div>
+            </section>
+
+            <!-- ---------- Stat cards ---------- -->
+            <section class="sect">
+                <h2>Figures <span>.stat</span></h2>
+                <p>The four numbers a merchant checks first. Each pairs a sparkline with a day-on-day delta, so direction reads before the figure does.</p>
+                <div class="stats" id="stats"></div>
+            </section>
+
+            <!-- ---------- Charts ---------- -->
+            <section class="sect">
+                <h2>Charts <span>charts.js</span></h2>
+                <p>Chart colour, grid and axis labels are read from the tokens at draw time, and every chart redraws on a theme change rather than keeping light-mode text on a dark panel.</p>
+                <div class="charts">
+                    <section class="panel">
+                        <div class="ph">
+                            <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></span>
+                            <h3>Sales overview</h3>
+                            <select aria-label="Date range"><option>Last 7 days</option><option>Last 30 days</option></select>
+                        </div>
+                        <div class="lg">
+                            <span><i class="dot" id="lg1"></i>Sales (KES)</span>
+                            <span><i class="dot" id="lg2"></i>Orders</span>
+                        </div>
+                        <div id="c1"></div>
+                    </section>
+                    <section class="panel">
+                        <div class="ph">
+                            <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12A9 9 0 1 1 12 3v9zM15 3.5A9 9 0 0 1 20.5 9H15z"/></svg></span>
+                            <h3>Payments by status</h3>
+                        </div>
+                        <div id="c2"></div>
+                    </section>
+                </div>
+            </section>
+
+            <!-- ---------- Table ---------- -->
+            <section class="sect">
+                <h2>Lists <span>.tcard</span></h2>
+                <p>One table card serves every list in the app. Below 600px the tools stack to full width and the table scrolls sideways on its own, so the page itself never does.</p>
+                <section class="tcard cq">
+                    <div class="tc-head">
+                        <span class="tc-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16h16V8zM14 2v6h6M8 13h8M8 17h8"/></svg></span>
+                        <div>
+                            <h2>Invoices <span class="tc-n">(6)</span></h2>
+                            <p>Fiscalized through the OSCU control unit</p>
+                        </div>
+                        <div class="tc-tools">
+                            <label class="tc-s">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                                <input placeholder="Search invoice or CU number" aria-label="Search invoices">
+                            </label>
+                            <label class="tc-f">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>
+                                <select aria-label="Filter by status"><option>All statuses</option><option>Fiscalized</option><option>Pending</option><option>Failed</option></select>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="tc-scroll">
+                        <table class="tbl">
+                            <thead><tr>
+                                <th>Invoice</th><th class="opt">Buyer</th><th class="opt2">Tax</th>
+                                <th>Amount</th><th>Status</th><th class="opt">CU number</th><th></th>
+                            </tr></thead>
+                            <tbody id="rows"></tbody>
+                        </table>
+                    </div>
+                    <div class="tc-foot">
+                        <span>Showing 6 of 148 invoices</span>
+                        <div class="tc-pg">
+                            <button class="pg" type="button" disabled>&lsaquo;</button>
+                            <button class="pg on" type="button">1</button>
+                            <button class="pg" type="button">2</button>
+                            <button class="pg" type="button">3</button>
+                            <button class="pg" type="button">&rsaquo;</button>
+                        </div>
+                    </div>
+                </section>
+            </section>
+
+            <!-- ---------- Status ---------- -->
+            <section class="sect">
+                <h2>Status <span>.pill</span></h2>
+                <p>Status is carried by a dot and a tint, not by colour alone, and the four tints hold their contrast in both themes. Semantic colour stays separate from the brand red so a failure never reads as branding.</p>
+                <div class="panel">
+                    <div class="row">
+                        <span class="pill ok">Fiscalized</span>
+                        <span class="pill warn">Awaiting payment</span>
+                        <span class="pill bad">Failed</span>
+                        <span class="pill info">Matched</span>
+                        <span class="pill">Draft</span>
+                    </div>
+                    <div class="steps" style="margin-bottom:0">
+                        <div class="step done">Order placed</div>
+                        <div class="step done">Payment matched</div>
+                        <div class="step active">Fiscalizing</div>
+                        <div class="step">Receipt sent</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ---------- Messages ---------- -->
+            <section class="sect">
+                <h2>Messages <span>.strip .notice .error</span></h2>
+                <p>Each message says what happened and what to do next. None of them apologise.</p>
+                <div class="panel" style="display:grid;gap:12px">
+                    <div class="strip" style="margin:0">
+                        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span>
+                        <div>
+                            <b>KRA and M-Pesa are both connected.</b>
+                            <small>Invoices fiscalize automatically as payments arrive.</small>
+                        </div>
+                        <a class="btnlink" href="#messages">View connections</a>
+                    </div>
+                    <div class="strip warn" style="margin:0">
+                        <span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+                        <div>
+                            <b>4 items have no KRA classification code.</b>
+                            <small>Classify them before their next sale, or fiscalization will reject the invoice.</small>
+                        </div>
+                        <a class="btnlink" href="#messages">Classify items</a>
+                    </div>
+                    <div class="notice" style="margin:0">Receipt sent to 0712&nbsp;••&nbsp;456. Delivery confirmed by Africa&rsquo;s Talking.</div>
+                    <div class="error" style="margin:0">Fiscalization failed: the control unit rejected tax type <b>B</b> for an exempt item. Change the item&rsquo;s tax type to <b>A</b> and retry.</div>
+                    <div class="sandbox" style="margin:0"><b>Sandbox.</b> Payments are simulated locally and no invoice reaches the live KRA environment.</div>
+                </div>
+            </section>
+
+            <!-- ---------- Controls ---------- -->
+            <section class="sect">
+                <h2>Controls <span>buttons &amp; inputs</span></h2>
+                <p>One filled button per view, for the single action that view exists to perform. Focus rings are visible on every control, in both themes.</p>
+                <div class="panel">
+                    <div class="row" style="margin-bottom:16px">
+                        <button class="primary" type="button">Fiscalize invoice</button>
+                        <button class="secondary" type="button">Save draft</button>
+                        <button class="secondary sm" type="button">Resend receipt</button>
+                        <button class="primary" type="button" disabled>Fiscalize invoice</button>
+                        <button class="icbtn" type="button" aria-label="Copy reference"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 9h11v11H9zM5 15V4h11"/></svg></button>
+                        <a class="btnlink" href="#controls">Download receipt</a>
+                    </div>
+                    <div class="cform">
+                        <div class="fgrid">
+                            <label>Item
+                                <select><option>Maize flour 2kg &middot; KES 180 &middot; tax B</option><option>Cooking oil 1L &middot; KES 350 &middot; tax B</option><option>Unga Pembe 1kg &middot; KES 95 &middot; tax A</option></select>
+                            </label>
+                            <label>Quantity
+                                <input type="number" value="12" min="1">
+                            </label>
+                            <button class="primary" type="button">Add to order</button>
+                        </div>
+                        <div class="fgrid2" style="margin-top:12px">
+                            <label>Buyer KRA PIN
+                                <input value="P051234567M" aria-describedby="pinhint">
+                            </label>
+                            <label>Buyer phone
+                                <input value="0712 345 678" inputmode="tel">
+                            </label>
+                        </div>
+                        <p id="pinhint" class="muted" style="margin:8px 0 0;font-size:12.5px">Leave the PIN blank for a walk-in buyer. The receipt still fiscalizes.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ---------- Connection cards ---------- -->
+            <section class="sect">
+                <h2>Connections <span>.concard</span></h2>
+                <p>The two integrations the product stands on, each showing its live state rather than a settings form.</p>
+                <div class="concards">
+                    <section class="concard">
+                        <div class="cc-top">
+                            <span class="ic big"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4"/></svg></span>
+                            <div>
+                                <h3>KRA eTIMS</h3>
+                                <span class="pill ok">Connected</span>
+                            </div>
+                        </div>
+                        <p class="cc-t">Invoices are signed by the OSCU control unit and filed against your PIN within seconds of a matched payment.</p>
+                        <div class="cc-kv"><span>PIN</span><b class="mono">P051234567M</b></div>
+                        <div class="cc-kv"><span>Branch</span><b class="mono">01</b></div>
+                        <div class="cc-kv"><span>Device serial</span><b class="mono">OSCU-SBX-0442</b></div>
+                        <button class="secondary" type="button">Re-check status</button>
+                    </section>
+                    <section class="concard">
+                        <div class="cc-top">
+                            <span class="ic big"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h10v20H7zM11 18h2"/></svg></span>
+                            <div>
+                                <h3>M-Pesa C2B</h3>
+                                <span class="pill warn">Awaiting first payment</span>
+                            </div>
+                        </div>
+                        <p class="cc-t">Validation and confirmation URLs are registered with Daraja. The next paybill payment will match itself to an open order.</p>
+                        <div class="cc-kv"><span>Shortcode</span><b class="mono">600987</b></div>
+                        <div class="cc-kv"><span>Environment</span><b>Sandbox</b></div>
+                        <div class="cc-kv"><span>Callbacks</span><b>Registered</b></div>
+                        <button class="primary" type="button">Send a test payment</button>
+                    </section>
+                </div>
+            </section>
+
+            <!-- ---------- Receipt fields ---------- -->
+            <section class="sect">
+                <h2>Receipt <span>.pay</span></h2>
+                <p>What the buyer sees after fiscalization, and what KRA requires on it.</p>
+                <div class="panel">
+                    <div class="pay" style="margin:0">
+                        <div><small>Control unit invoice</small><b class="mono">CU-0010294471</b></div>
+                        <div><small>Fiscalized at</small><b>28 Oct 2026, 14:32 EAT</b></div>
+                        <div><small>Total incl. VAT</small><b>KES 2,160</b></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ---------- Layout ---------- -->
+            <section class="sect">
+                <h2>Layout <span>breakpoints</span></h2>
+                <p>Three steps, each one chosen because something actually breaks at that width rather than to match a device.</p>
+                <div class="panel">
+                    <ul class="bp">
+                        <li><code>&gt; 1200px</code><span>Sidebar docked. Charts sit two-up beside each other.</span></li>
+                        <li><code>&le; 1200px</code><span>Chart and connection pairs drop to one column; the hero illustration is dropped rather than squeezed.</span></li>
+                        <li><code>&le; 1000px</code><span>Sidebar leaves the grid and becomes a drawer behind the burger, over a scrim. Escape or a tap outside closes it, and choosing a destination closes it too.</span></li>
+                        <li><code>&le; 600px</code><span>Single column, condensed padding, full-width filters, notifications pinned to the screen edges. Inputs stay at 14px so iOS does not zoom on focus.</span></li>
+                        <li><code>&le; 420px</code><span>Search collapses out of the top bar; the theme and bell buttons keep their place.</span></li>
+                    </ul>
+                    <div class="note" style="margin-top:14px">
+                        <div><b>Try it:</b> narrow this window past 1000px and the sidebar becomes a drawer. The theme follows your device until you press the moon, and that choice is then remembered.</div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>
+
+<script src="js/charts.js"></script>
+<script>
+(function () {
+    'use strict';
+
+    var tok = function (name) {
+        return getComputedStyle(document.documentElement)
+            .getPropertyValue('--' + name).trim();
+    };
+
+    /* ---------- Palette swatches ---------- */
+    var PALETTE = [
+        ['canvas', 'Page behind everything'],
+        ['surface', 'Cards, bars, menus'],
+        ['surface-2', 'Inset fields and rows'],
+        ['band', 'Hero and table head'],
+        ['brand', 'The one action per view'],
+        ['brand-soft', 'Brand tint behind icons'],
+        ['ink', 'Primary text'],
+        ['mut', 'Secondary text'],
+        ['line', 'Borders and rules'],
+        ['ok', 'Fiscalized, matched'],
+        ['warn', 'Needs attention'],
+        ['bad', 'Failed, rejected'],
+        ['info', 'Neutral state'],
+        ['chart-3', 'Data series'],
+        ['chart-4', 'Data series']
+    ];
+
+    document.getElementById('swatches').innerHTML = PALETTE.map(function (p) {
+        return '<div class="sw"><i style="background:var(--' + p[0] + ')"></i>' +
+            '<div><b>' + p[1] + '</b><code>--' + p[0] + '</code></div></div>';
+    }).join('');
+
+    /* ---------- Stat cards ---------- */
+    var STATS = [
+        ['Today&rsquo;s sales', 'KES 184,500', 'up', '12% vs yesterday', 'cart', [96, 104, 88, 132, 118, 156, 184]],
+        ['Orders', '38', 'up', '6 today', 'cart', [22, 26, 19, 31, 28, 34, 38]],
+        ['Matched payments', '35', 'down', '3% vs yesterday', 'card', [20, 25, 18, 30, 29, 36, 35]],
+        ['Fiscalized invoices', '33', 'up', '9% vs yesterday', 'file', [17, 23, 17, 27, 26, 30, 33]]
+    ];
+
+    function drawStats() {
+        document.getElementById('stats').innerHTML = STATS.map(function (s, i) {
+            var colour = i % 2 ? tok('chart-2') : tok('chart-1');
+            var arrow = s[2] === 'up' ? '&#9650;' : '&#9660;';
+
+            return '<div class="stat">' +
+                '<span class="ic' + (i % 2 ? ' dk' : '') + '">' + Charts.icon(s[4]) + '</span>' +
+                '<div><small>' + s[0] + '</small><b>' + s[1] + '</b>' +
+                '<span class="delta ' + s[2] + '">' + arrow + ' ' + s[3] + '</span>' +
+                Charts.spark(s[5], colour) + '</div></div>';
+        }).join('');
+    }
+
+    /* ---------- Charts ---------- */
+    var DAYS = ['Wed', 'Thu', 'Fri', 'Sat', 'Sun', 'Mon', 'Tue'];
+    var SALES = [96000, 104000, 88000, 132000, 118000, 156000, 184500];
+    var ORDERS = [22, 26, 19, 31, 28, 34, 38];
+
+    function drawCharts() {
+        Charts.lines(document.getElementById('c1'), DAYS, SALES, ORDERS);
+
+        Charts.donut(document.getElementById('c2'), [
+            { n: 'Matched', v: 35, c: tok('chart-2') },
+            { n: 'Unmatched', v: 4, c: tok('chart-4') },
+            { n: 'Amount mismatch', v: 2, c: tok('chart-1') },
+            { n: 'Awaiting', v: 3, c: tok('line-strong') }
+        ], 'payments');
+
+        document.getElementById('lg1').style.background = tok('chart-1');
+        document.getElementById('lg2').style.background = tok('chart-2');
+    }
+
+    /* ---------- Invoice rows ---------- */
+    var INVOICES = [
+        ['INV-00148', 'Wanjiku Stores', 'B 16%', 'KES 2,160', 'ok', 'Fiscalized', 'CU-0010294471'],
+        ['INV-00147', 'Walk-in buyer', 'A exempt', 'KES 950', 'ok', 'Fiscalized', 'CU-0010294468'],
+        ['INV-00146', 'Kimathi Hardware', 'B 16%', 'KES 18,420', 'warn', 'Awaiting payment', '&mdash;'],
+        ['INV-00145', 'Achieng Pharmacy', 'E 8%', 'KES 7,310', 'ok', 'Fiscalized', 'CU-0010294455'],
+        ['INV-00144', 'Mwangi Grocers', 'B 16%', 'KES 4,080', 'bad', 'Failed', '&mdash;'],
+        ['INV-00143', 'Otieno &amp; Sons', 'C zero-rated', 'KES 12,600', 'info', 'Matched', '&mdash;']
+    ];
+
+    document.getElementById('rows').innerHTML = INVOICES.map(function (r, i) {
+        return '<tr style="--i:' + i + '">' +
+            '<td><span class="cell-id"><span class="tile">' + Charts.icon('file') + '</span>' +
+            '<span class="mono">' + r[0] + '</span></span></td>' +
+            '<td class="opt">' + r[1] + '</td>' +
+            '<td class="opt2"><span class="pill">' + r[2] + '</span></td>' +
+            '<td><span class="amt">' + r[3] + '</span></td>' +
+            '<td><span class="pill ' + r[4] + '">' + r[5] + '</span></td>' +
+            '<td class="opt mono muted">' + r[6] + '</td>' +
+            '<td><button class="icbtn" type="button" aria-label="View invoice ' + r[0] + '">' +
+            Charts.icon('eye') + '</button></td></tr>';
+    }).join('');
+
+    drawStats();
+    drawCharts();
+
+    // The sparklines and donut take explicit colours, so they are redrawn by hand.
+    // charts.js redraws the line chart itself on the same event.
+    window.addEventListener('themechange', function () {
+        drawStats();
+        drawCharts();
+    });
+}());
+</script>
+</body>
+</html>
