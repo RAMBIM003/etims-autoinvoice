@@ -49,25 +49,39 @@ const VIEWPORTS = [
     { tag: "mobile", width: 390, height: 844 },
 ];
 
+/* Light is the product default and does not follow the device. Both passes run
+   on a dark device: one with nothing stored, one with dark chosen. */
+const THEME_MODES = [
+    { tag: "default-light", stored: null, expectDark: false },
+    { tag: "chosen-dark", stored: "dark", expectDark: true },
+];
+
 const failures = [];
 const note = (msg) => failures.push(msg);
 
 /* next/script and the dev overlay are noisy about favicons; ignore only those. */
 const IGNORE = [/favicon/i, /Download the React DevTools/i];
 
-async function newPage(browser, viewport, scheme) {
+async function newPage(browser, viewport, scheme, theme) {
     const ctx = await browser.newContext({
         viewport: { width: viewport.width, height: viewport.height },
+        /* Always a dark device, so "light by default" is actually proved
+           rather than inherited from the test runner. */
         colorScheme: scheme,
         deviceScaleFactor: 1,
     });
 
-    /* The app reads the bearer token from localStorage, so seed one. */
-    await ctx.addInitScript(() => {
+    /* The app reads the bearer token from localStorage, so seed one.
+       next-themes keeps the chosen theme under "theme" in the same store. */
+    await ctx.addInitScript((chosen) => {
         try {
             window.localStorage.setItem("token", "test-token");
+            /* Set only. Clearing here would also run on a reload and wipe a
+               choice the page under test had just made. A fresh context
+               already starts with an empty store. */
+            if (chosen) window.localStorage.setItem("theme", chosen);
         } catch {}
-    });
+    }, theme);
 
     const page = await ctx.newPage();
     const errors = [];
@@ -87,10 +101,10 @@ async function run() {
     const browser = await chromium.launch({ args: ["--no-sandbox"] });
 
     for (const viewport of VIEWPORTS) {
-        for (const scheme of ["light", "dark"]) {
+        for (const mode of THEME_MODES) {
             for (const route of ROUTES) {
-                const { ctx, page, errors } = await newPage(browser, viewport, scheme);
-                const label = `${route.name} [${viewport.tag}/${scheme}]`;
+                const { ctx, page, errors } = await newPage(browser, viewport, "dark", mode.stored);
+                const label = `${route.name} [${viewport.tag}/${mode.tag}]`;
 
                 try {
                     const response = await page.goto(`${BASE}${route.path}`, { waitUntil: "networkidle", timeout: 30000 });
@@ -118,8 +132,14 @@ async function run() {
                         note(`${label}: horizontal overflow ${overflow.scrollW} > ${overflow.clientW}`);
                     }
 
-                    if (scheme === "dark" && !overflow.dark) {
-                        note(`${label}: dark scheme did not apply the dark class`);
+                    /* The device is dark in every pass. Only an explicit choice
+                       may turn the page dark; otherwise it must render light. */
+                    if (mode.expectDark && !overflow.dark) {
+                        note(`${label}: the stored dark choice was not applied`);
+                    }
+
+                    if (!mode.expectDark && overflow.dark) {
+                        note(`${label}: rendered dark although light is the default`);
                     }
 
                     if (overflow.bg === "rgba(0, 0, 0, 0)") {
@@ -135,7 +155,7 @@ async function run() {
                     if (real.length) note(`${label}: console ${JSON.stringify(real.slice(0, 2))}`);
 
                     if (SHOTS && viewport.tag === "desktop") {
-                        await page.screenshot({ path: `${SHOTS}/${route.name}-${scheme}.png`, fullPage: true });
+                        await page.screenshot({ path: `${SHOTS}/${route.name}-${mode.tag}.png`, fullPage: true });
                     }
 
                     console.log(`  ok  ${label}`);
@@ -150,7 +170,7 @@ async function run() {
 
     /* ---- The collapsible sidebar ---- */
     {
-        const { ctx, page, errors } = await newPage(browser, VIEWPORTS[0], "light");
+        const { ctx, page, errors } = await newPage(browser, VIEWPORTS[0], "dark", null);
 
         await page.goto(`${BASE}/merchant`, { waitUntil: "networkidle" });
 
@@ -203,7 +223,7 @@ async function run() {
 
     /* ---- The sidebar as a sheet on mobile ---- */
     {
-        const { ctx, page, errors } = await newPage(browser, VIEWPORTS[1], "dark");
+        const { ctx, page, errors } = await newPage(browser, VIEWPORTS[1], "dark", "dark");
 
         await page.goto(`${BASE}/merchant`, { waitUntil: "networkidle" });
 
@@ -234,9 +254,15 @@ async function run() {
 
     /* ---- The theme toggle persists across a reload ---- */
     {
-        const { ctx, page, errors } = await newPage(browser, VIEWPORTS[0], "light");
+        const { ctx, page, errors } = await newPage(browser, VIEWPORTS[0], "dark", null);
 
         await page.goto(`${BASE}/sign-in`, { waitUntil: "networkidle" });
+
+        /* The device is dark; the page must still open light. */
+        if (await page.evaluate(() => document.documentElement.classList.contains("dark"))) {
+            note("theme toggle: the page opened dark on a dark device, but light is the default");
+        }
+
         await page.click('button[aria-label="Switch between light and dark mode"]');
         await page.waitForTimeout(300);
 
@@ -268,7 +294,7 @@ async function run() {
         process.exit(1);
     }
 
-    console.log(`PASSED — ${ROUTES.length} routes × ${VIEWPORTS.length} widths × 2 themes, plus sidebar and theme checks`);
+    console.log(`PASSED — ${ROUTES.length} routes × ${VIEWPORTS.length} widths × ${THEME_MODES.length} theme modes, plus sidebar and theme checks`);
 }
 
 run();
