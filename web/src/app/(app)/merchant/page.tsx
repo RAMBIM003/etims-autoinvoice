@@ -241,7 +241,7 @@ export default function MerchantDashboardPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Order</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Customer</TableHead>
+                                    <TableHead className="@max-xl:hidden">Customer</TableHead>
                                     <TableHead>Amount</TableHead>
                                     <TableHead>Status</TableHead>
                                 </TableRow>
@@ -250,7 +250,7 @@ export default function MerchantDashboardPage() {
                                 {data.orders.map((order) => (
                                     <TableRow key={order.id}>
                                         <TableCell className="font-mono text-xs">{order.order_reference}</TableCell>
-                                        <TableCell className="hidden sm:table-cell">{order.customer_name}</TableCell>
+                                        <TableCell className="@max-xl:hidden">{order.customer_name}</TableCell>
                                         <TableCell className="tabular font-bold">{kes(order.total_amount)}</TableCell>
                                         <TableCell>
                                             <StatusBadge status={order.status} />
@@ -285,24 +285,24 @@ export default function MerchantDashboardPage() {
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>M-Pesa ref</TableHead>
-                                    <TableHead className="hidden sm:table-cell">Reference</TableHead>
+                                    <TableHead className="@max-xl:hidden">Reference</TableHead>
                                     <TableHead>Amount</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="hidden md:table-cell">Time</TableHead>
+                                    <TableHead className="@max-md:hidden">Time</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {data.payments.map((payment) => (
                                     <TableRow key={payment.id}>
                                         <TableCell className="font-mono text-xs">{payment.trans_id || "—"}</TableCell>
-                                        <TableCell className="text-muted-foreground hidden font-mono text-xs sm:table-cell">
+                                        <TableCell className="text-muted-foreground font-mono text-xs @max-xl:hidden">
                                             {payment.payment_reference || "—"}
                                         </TableCell>
                                         <TableCell className="tabular font-bold">{kes(payment.amount)}</TableCell>
                                         <TableCell>
                                             <StatusBadge status={payment.status} />
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground hidden md:table-cell">
+                                        <TableCell className="text-muted-foreground @max-md:hidden">
                                             {timeOnly(payment.paid_at)}
                                         </TableCell>
                                     </TableRow>

@@ -25,7 +25,7 @@ export function ListCard({
     footer?: React.ReactNode;
 }) {
     return (
-        <Card className="mb-4 min-w-0 p-4 sm:p-5">
+        <Card className="@container mb-4 min-w-0 p-4 sm:p-5">
             <div className="mb-3.5 flex flex-wrap items-center gap-3">
                 <span className="bg-primary text-primary-foreground grid size-10 shrink-0 place-items-center rounded-xl">
                     <Icon className="size-5" />

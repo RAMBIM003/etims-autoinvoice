@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, api } from "@/lib/api";
 import { dateTime } from "@/lib/format";
-import type { DashboardPayload } from "@/lib/types";
+import type { ConnectionsPayload } from "@/lib/types";
 
 function Row({ label, value }: { label: string; value: React.ReactNode }) {
     return (
@@ -25,10 +25,10 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default function ConnectionsPage() {
     const [checking, setChecking] = React.useState(false);
-    const dashboard = useApi<DashboardPayload>(() => api.dashboard() as Promise<DashboardPayload>);
+    const dashboard = useApi<ConnectionsPayload>(() => api.connections() as Promise<ConnectionsPayload>);
 
-    const kra = dashboard.data?.connections.kra ?? null;
-    const mpesa = dashboard.data?.connections.mpesa ?? [];
+    const kra = dashboard.data?.kra ?? null;
+    const mpesa = dashboard.data?.mpesa ?? [];
     const merchant = dashboard.data?.merchant;
 
     async function recheck() {
@@ -76,7 +76,9 @@ export default function ConnectionsPage() {
                                 Invoices are signed by the OSCU control unit and filed against your PIN within seconds
                                 of a matched payment.
                             </p>
-                            <Row label="PIN" value={merchant?.kra_pin || "Not set"} />
+                            <Row label="PIN" value={kra?.kra_pin || merchant?.kra_pin || "Not set"} />
+                            <Row label="Branch" value={kra?.bhf_id || "Not set"} />
+                            <Row label="Environment" value={kra?.environment || "—"} />
                             <Row label="Last verified" value={kra?.last_verified_at ? dateTime(kra.last_verified_at) : "Never"} />
                             {kra?.last_result ? <Row label="Last result" value={kra.last_result} /> : null}
                             <Button variant="outline" className="mt-2 w-fit" onClick={recheck} disabled={checking}>

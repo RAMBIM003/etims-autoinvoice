@@ -130,3 +130,23 @@ export type BuyerPurchase = {
     stage: string;
     receipt_url?: string | null;
 };
+
+export type ConnectionsPayload = {
+    merchant: { id: string; trading_name: string; kra_pin?: string | null };
+    kra: {
+        environment?: string | null;
+        kra_pin?: string | null;
+        bhf_id?: string | null;
+        status?: string | null;
+        last_verified_at?: string | null;
+        last_result?: string | null;
+    } | null;
+    mpesa: MpesaConnection[];
+};
+
+export type MeResponse = {
+    user: { id: string; email?: string | null; full_name?: string | null; phone?: string | null };
+    merchant?: { id: string; trading_name: string; kra_pin?: string | null } | null;
+    kra?: { status?: string | null } | null;
+    mpesa?: { type: string; shortcode?: string | null; status: string; callback?: string | null }[] | null;
+};
