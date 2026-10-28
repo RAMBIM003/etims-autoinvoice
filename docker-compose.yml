@@ -15,11 +15,14 @@ services:
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./web
     container_name: etims-frontend
+    environment:
+      # Where the Next proxy forwards /api/*. Read per request, so this can
+      # change without rebuilding the image.
+      API_ORIGIN: http://backend:5000
     ports:
-      - "8081:80"
+      - "8081:3000"
     depends_on:
       - backend
     networks:
