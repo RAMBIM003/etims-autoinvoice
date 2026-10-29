@@ -15,12 +15,28 @@ declare global {
  * Sandbox note carried over from the original receipt page: this QR encodes the
  * receipt's own link, not KRA's official verification URL.
  *
- * The link is read from the address bar inside the effect and written straight
- * to the DOM, so the server and client render the same empty box.
+ * With no `text`, the link is read from the address bar inside the effect and
+ * written straight to the DOM, so the server and client render the same empty box.
  */
-export function ReceiptQr() {
+export function ReceiptQr({
+    text,
+    caption = "Scan to open this receipt",
+    size = 132,
+    onRendered,
+}: {
+    text?: string;
+    caption?: string;
+    size?: number;
+    /** Called once the code is drawn, e.g. to print only after it is on the page. */
+    onRendered?: () => void;
+}) {
     const box = React.useRef<HTMLDivElement>(null);
     const [ready, setReady] = React.useState(false);
+    const renderedRef = React.useRef(onRendered);
+
+    React.useEffect(() => {
+        renderedRef.current = onRendered;
+    });
 
     React.useEffect(() => {
         const node = box.current;
@@ -28,8 +44,9 @@ export function ReceiptQr() {
         if (!ready || !node || !window.QRCode) return;
 
         node.replaceChildren();
-        new window.QRCode(node, { text: window.location.href, width: 132, height: 132 });
-    }, [ready]);
+        new window.QRCode(node, { text: text ?? window.location.href, width: size, height: size });
+        renderedRef.current?.();
+    }, [ready, text, size]);
 
     return (
         <>
@@ -38,9 +55,10 @@ export function ReceiptQr() {
                 <div
                     ref={box}
                     aria-label="QR code linking to this receipt"
-                    className="grid size-[132px] place-items-center rounded-lg bg-white p-1"
+                    className="grid place-items-center rounded-lg bg-white p-1"
+                    style={{ width: size, height: size }}
                 />
-                <span className="text-muted-foreground text-[10px]">Scan to open this receipt</span>
+                <span className="text-muted-foreground text-[10px]">{caption}</span>
             </div>
         </>
     );

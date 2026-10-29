@@ -23,6 +23,8 @@ export type Payment = {
     created_at?: string | null;
     trans_id?: string | null;
     business_shortcode?: string | null;
+    /** The account reference the payer typed, normally an order reference. */
+    bill_ref_number?: string | null;
     payer_name?: string | null;
 };
 
@@ -43,6 +45,44 @@ export type Invoice = {
     cu_serial_number?: string | null;
     fiscalized_at?: string | null;
     created_at: string;
+    seller_name?: string | null;
+    sdc_date_time?: string | null;
+    kra_internal_data?: string | null;
+    receipt_signature?: string | null;
+    qr_code?: string | null;
+};
+
+export type InvoiceLine = {
+    id: string;
+    line_number: number;
+    sku?: string | null;
+    item_name: string;
+    quantity: string | number;
+    unit_code?: string | null;
+    unit_price: string | number;
+    tax_type_code?: string | null;
+    tax_rate?: string | number | null;
+    tax_amount: string | number;
+    line_subtotal: string | number;
+    line_total: string | number;
+};
+
+/** GET /invoices/:id: the invoice and everything its printed copy shows. */
+export type InvoiceDetail = {
+    invoice: Invoice;
+    items: InvoiceLine[];
+    sale: { order_reference: string; created_at: string } | null;
+    merchant: { trading_name: string; taxpayer_name?: string | null; kra_pin: string; business_phone?: string | null } | null;
+    branch: { branch_name: string; kra_bhf_id: string } | null;
+    payment: {
+        amount: string | number;
+        paid_at?: string | null;
+        payment_method?: string | null;
+        trans_id?: string | null;
+        payer_name?: string | null;
+    } | null;
+    /** Set only for a fiscalized invoice with an active public receipt. */
+    receipt_token: string | null;
 };
 
 export type Item = {
@@ -129,6 +169,8 @@ export type BuyerPurchase = {
     invoice?: { id: string; number: string; status: string; kra_receipt_number?: string | null } | null;
     stage: string;
     receipt_url?: string | null;
+    /** What was bought, in line order. */
+    items?: { item_name: string; quantity: string | number; unit_code?: string | null }[];
 };
 
 export type ConnectionsPayload = {

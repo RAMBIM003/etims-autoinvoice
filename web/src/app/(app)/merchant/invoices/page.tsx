@@ -1,13 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { FileTextIcon, SearchIcon } from "lucide-react";
+import Link from "next/link";
+import { EyeIcon, FileTextIcon, MoreHorizontalIcon, PrinterIcon, SearchIcon } from "lucide-react";
 
+import { ANY_DATE, DateRangeFilter, type DateRange, inRange } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -21,6 +28,7 @@ const STATUSES = ["All statuses", "FISCALIZED", "PENDING", "FAILED"];
 export default function InvoicesPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
+    const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
 
     const invoices = useApi<{ invoices: Invoice[] }>(
         () => api.invoices() as unknown as Promise<{ invoices: Invoice[] }>
@@ -32,8 +40,10 @@ export default function InvoicesPage() {
         const matchesStatus = status === STATUSES[0] || invoice.fiscalization_status === status;
         const haystack = `${invoice.invoice_number} ${invoice.buyer_name ?? ""} ${invoice.kra_invoice_number ?? ""}`.toLowerCase();
 
-        return matchesStatus && haystack.includes(query.toLowerCase().trim());
+        return matchesStatus && inRange(invoice.created_at, period) && haystack.includes(query.toLowerCase().trim());
     });
+
+    const paged = usePagination(visible, `${query}|${status}|${period.from}|${period.to}`);
 
     return (
         <>
@@ -76,9 +86,14 @@ export default function InvoicesPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <DateRangeFilter
+                            value={period}
+                            onChange={setPeriod}
+                            hint="Invoices are filtered by the day they were issued, in Nairobi time."
+                        />
                     </>
                 }
-                footer={<span>Showing {visible.length} of {all.length} invoices</span>}
+                footer={<TablePagination pagination={paged} noun="invoices" unfiltered={all.length} />}
             >
                 {invoices.loading ? (
                     <LoadingRows />
@@ -94,12 +109,23 @@ export default function InvoicesPage() {
                                 <TableHead>Status</TableHead>
                                 <TableHead className="hidden md:table-cell">CU number</TableHead>
                                 <TableHead className="hidden xl:table-cell">Fiscalized</TableHead>
+                                <TableHead className="w-10">
+                                    <span className="sr-only">Actions</span>
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visible.map((invoice) => (
+                            {paged.rows.map((invoice) => (
                                 <TableRow key={invoice.id}>
-                                    <TableCell className="font-mono text-xs">{invoice.invoice_number}</TableCell>
+                                    <TableCell className="font-mono text-xs">
+                                        <Link
+                                            href={`/invoices/${invoice.id}`}
+                                            className="text-primary font-semibold underline-offset-4 hover:underline focus-visible:underline"
+                                            title="Open invoice"
+                                        >
+                                            {invoice.invoice_number}
+                                        </Link>
+                                    </TableCell>
                                     <TableCell className="hidden sm:table-cell">
                                         {invoice.buyer_name || "Walk-in buyer"}
                                     </TableCell>
@@ -117,6 +143,9 @@ export default function InvoicesPage() {
                                             <Badge variant="outline">Not yet</Badge>
                                         )}
                                     </TableCell>
+                                    <TableCell className="text-right">
+                                        <InvoiceActions id={invoice.id} number={invoice.invoice_number} />
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -125,7 +154,7 @@ export default function InvoicesPage() {
                     <EmptyState
                         icon={SearchIcon}
                         title="Nothing matches that filter"
-                        description="Clear the search box or choose a different status to see your invoices again."
+                        description="Clear the search box, choose a different status or widen the dates to see your invoices again."
                     />
                 ) : (
                     <EmptyState
@@ -136,5 +165,31 @@ export default function InvoicesPage() {
                 )}
             </ListCard>
         </>
+    );
+}
+
+/** View and print for one invoice, behind the row's "⋯" button. */
+function InvoiceActions({ id, number }: { id: string; number: string }) {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${number}`}>
+                    <MoreHorizontalIcon />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="text-muted-foreground font-mono text-xs font-normal">{number}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href={`/invoices/${id}`}>
+                        <EyeIcon /> View invoice
+                    </Link>
+                </DropdownMenuItem>
+                {/* A new tab keeps the list where it was; that tab prints itself once the invoice is drawn. */}
+                <DropdownMenuItem onSelect={() => window.open(`/invoices/${id}?print=1`, "_blank", "noopener")}>
+                    <PrinterIcon /> Print invoice
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }

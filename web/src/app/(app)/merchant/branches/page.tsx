@@ -3,6 +3,7 @@
 import { MapPinIcon } from "lucide-react";
 
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
@@ -15,6 +16,7 @@ import type { DashboardPayload } from "@/lib/types";
 export default function BranchesPage() {
     const dashboard = useApi<DashboardPayload>(() => api.dashboard() as Promise<DashboardPayload>);
     const branches = dashboard.data?.branches ?? [];
+    const paged = usePagination(branches);
 
     return (
         <>
@@ -33,6 +35,7 @@ export default function BranchesPage() {
                 title="Branches"
                 count={branches.length}
                 description="Ordered by branch code"
+                footer={<TablePagination pagination={paged} noun="branches" one="branch" />}
             >
                 {dashboard.loading ? (
                     <LoadingRows rows={3} />
@@ -47,7 +50,7 @@ export default function BranchesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {branches.map((branch) => (
+                            {paged.rows.map((branch) => (
                                 <TableRow key={branch.id}>
                                     <TableCell className="font-mono text-xs">{branch.branch_code}</TableCell>
                                     <TableCell className="font-medium">

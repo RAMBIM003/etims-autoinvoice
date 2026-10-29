@@ -1,8 +1,11 @@
 "use client";
 
-import { ExternalLinkIcon, ReceiptIcon } from "lucide-react";
+import * as React from "react";
+import { CalendarSearchIcon, ExternalLinkIcon, ReceiptIcon } from "lucide-react";
 
+import { ANY_DATE, DateRangeFilter, type DateRange, inRange } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
@@ -18,7 +21,11 @@ export default function BuyerReceiptsPage() {
         () => api.buyerOrders() as unknown as Promise<{ orders: BuyerPurchase[] }>
     );
 
-    const receipts = (purchases.data?.orders ?? []).filter((p) => p.invoice);
+    const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
+
+    const all = (purchases.data?.orders ?? []).filter((p) => p.invoice);
+    const receipts = all.filter((p) => inRange(p.order.created_at, period));
+    const paged = usePagination(receipts, `${period.from}|${period.to}`);
 
     return (
         <>
@@ -37,6 +44,14 @@ export default function BuyerReceiptsPage() {
                 title="Receipts"
                 count={receipts.length}
                 description="Newest first"
+                tools={
+                    <DateRangeFilter
+                        value={period}
+                        onChange={setPeriod}
+                        hint="Receipts are filtered by the day you made the purchase, in Nairobi time."
+                    />
+                }
+                footer={<TablePagination pagination={paged} noun="receipts" unfiltered={all.length} />}
             >
                 {purchases.loading ? (
                     <LoadingRows />
@@ -54,7 +69,7 @@ export default function BuyerReceiptsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {receipts.map((purchase) => (
+                            {paged.rows.map((purchase) => (
                                 <TableRow key={purchase.invoice!.id}>
                                     <TableCell className="font-mono text-xs">{purchase.invoice!.number}</TableCell>
                                     <TableCell className="hidden sm:table-cell">
@@ -81,6 +96,12 @@ export default function BuyerReceiptsPage() {
                             ))}
                         </TableBody>
                     </Table>
+                ) : all.length ? (
+                    <EmptyState
+                        icon={CalendarSearchIcon}
+                        title="No receipts in these dates"
+                        description="Widen the date range or clear the filter to see all your receipts."
+                    />
                 ) : (
                     <EmptyState
                         icon={ReceiptIcon}

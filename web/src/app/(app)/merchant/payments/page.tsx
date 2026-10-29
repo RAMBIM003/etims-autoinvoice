@@ -1,25 +1,47 @@
 "use client";
 
 import * as React from "react";
-import { CreditCardIcon, SearchIcon } from "lucide-react";
+import { ChevronDownIcon, CreditCardIcon, DownloadIcon, PrinterIcon, SearchIcon, SheetIcon } from "lucide-react";
 
+import { ANY_DATE, DateRangeFilter, type DateRange, describeRange, inRange, isActive } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApi } from "@/hooks/use-api";
 import { api } from "@/lib/api";
+import { type ExportColumn, csvDate, downloadCsv, printReport, today } from "@/lib/export";
 import { dateTime, kes, statusLabel } from "@/lib/format";
-import type { Payment } from "@/lib/types";
+import type { ConnectionsPayload, Payment } from "@/lib/types";
 
 const STATUSES = ["All statuses", "MATCHED", "UNMATCHED", "AMOUNT_MISMATCH"];
+
+/* Everything the API knows about a payment, not just what fits on screen. */
+const EXPORT_COLUMNS: ExportColumn<Payment>[] = [
+    { header: "M-Pesa ref", value: (p) => p.trans_id || "—", csv: (p) => p.trans_id ?? "", mono: true },
+    { header: "Payer", value: (p) => p.payer_name || "—", csv: (p) => p.payer_name ?? "" },
+    { header: "Order reference", value: (p) => p.bill_ref_number || "—", csv: (p) => p.bill_ref_number ?? "", mono: true },
+    { header: "Shortcode", value: (p) => p.business_shortcode || "—", csv: (p) => p.business_shortcode ?? "", mono: true },
+    { header: "Status", value: (p) => statusLabel(p.status) },
+    { header: "Match", value: (p) => (p.match_method ? statusLabel(p.match_method) : "—"), csv: (p) => p.match_method ?? "" },
+    { header: "Paid", value: (p) => dateTime(p.paid_at ?? p.created_at), csv: (p) => csvDate(p.paid_at ?? p.created_at) },
+    { header: "Amount", value: (p) => kes(p.amount), csv: (p) => Number(p.amount), align: "right" },
+];
+
+const sum = (rows: Payment[]) => rows.reduce((total, p) => total + Number(p.amount || 0), 0);
 
 export default function PaymentsPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
+    const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
 
     const payments = useApi<{ payments: Payment[] }>(
         () => api.payments() as unknown as Promise<{ payments: Payment[] }>
@@ -29,10 +51,43 @@ export default function PaymentsPage() {
 
     const visible = all.filter((payment) => {
         const matchesStatus = status === STATUSES[0] || payment.status === status;
-        const haystack = `${payment.trans_id ?? ""} ${payment.payment_reference ?? ""} ${payment.payer_name ?? ""}`.toLowerCase();
+        const haystack = `${payment.trans_id ?? ""} ${payment.bill_ref_number ?? ""} ${payment.payer_name ?? ""}`.toLowerCase();
 
-        return matchesStatus && haystack.includes(query.toLowerCase().trim());
+        return (
+            matchesStatus &&
+            inRange(payment.paid_at ?? payment.created_at, period) &&
+            haystack.includes(query.toLowerCase().trim())
+        );
     });
+
+    const paged = usePagination(visible, `${query}|${status}|${period.from}|${period.to}`);
+
+    /* Only for the report heading; a failure just leaves the heading shorter. */
+    const merchant = useApi<ConnectionsPayload>(() => api.connections() as Promise<ConnectionsPayload>).data?.merchant;
+
+    /* "payments-2026-10-01-to-2026-10-29" when a period is set, else today's date. */
+    const exportName = `payments-${isActive(period) ? `${period.from || "start"}-to-${period.to || today()}` : today()}`;
+
+    function exportPrint() {
+        const matched = visible.filter((p) => p.status === "MATCHED");
+        const facts: [string, string][] = [
+            ["Period", describeRange(period)],
+            ["Status", status],
+            ...(query.trim() ? [["Search", `"${query.trim()}"`] as [string, string]] : []),
+            ["Payments", String(visible.length)],
+            ["Total received", kes(sum(visible))],
+            ["Matched", `${matched.length} · ${kes(sum(matched))}`],
+            ["Not matched", `${visible.length - matched.length} · ${kes(sum(visible) - sum(matched))}`],
+        ];
+
+        printReport(visible, EXPORT_COLUMNS, {
+            title: "M-Pesa payments",
+            subtitle: merchant ? [merchant.trading_name, merchant.kra_pin && `PIN ${merchant.kra_pin}`].filter(Boolean).join(" · ") : undefined,
+            facts,
+            totals: EXPORT_COLUMNS.map((c, i) => (i === 0 ? "Total" : i === EXPORT_COLUMNS.length - 1 ? kes(sum(visible)) : "")),
+            fileName: exportName,
+        });
+    }
 
     return (
         <>
@@ -75,9 +130,43 @@ export default function PaymentsPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <DateRangeFilter
+                            value={period}
+                            onChange={setPeriod}
+                            hint="Payments are filtered by the day they were paid, in Nairobi time."
+                        />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9" disabled={!visible.length}>
+                                    <DownloadIcon /> Export <ChevronDownIcon className="text-muted-foreground" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-60">
+                                <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+                                    {visible.length === all.length
+                                        ? `All ${visible.length} payments`
+                                        : `${visible.length} payments matching your filters`}
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={exportPrint}>
+                                    <PrinterIcon />
+                                    <span>
+                                        <span className="block">Print or save as PDF</span>
+                                        <span className="text-muted-foreground block text-xs">A4 report with totals</span>
+                                    </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => downloadCsv(visible, EXPORT_COLUMNS, exportName)}>
+                                    <SheetIcon />
+                                    <span>
+                                        <span className="block">Download CSV</span>
+                                        <span className="text-muted-foreground block text-xs">Opens in Excel or Sheets</span>
+                                    </span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </>
                 }
-                footer={<span>Showing {visible.length} of {all.length} payments</span>}
+                footer={<TablePagination pagination={paged} noun="payments" unfiltered={all.length} />}
             >
                 {payments.loading ? (
                     <LoadingRows />
@@ -94,12 +183,12 @@ export default function PaymentsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visible.map((payment) => (
+                            {paged.rows.map((payment) => (
                                 <TableRow key={payment.id}>
                                     <TableCell className="font-mono text-xs">{payment.trans_id || "—"}</TableCell>
                                     <TableCell className="hidden sm:table-cell">{payment.payer_name || "—"}</TableCell>
                                     <TableCell className="text-muted-foreground hidden font-mono text-xs lg:table-cell">
-                                        {payment.payment_reference || "—"}
+                                        {payment.bill_ref_number || "—"}
                                     </TableCell>
                                     <TableCell className="tabular font-bold">{kes(payment.amount)}</TableCell>
                                     <TableCell><StatusBadge status={payment.status} /></TableCell>
@@ -114,7 +203,7 @@ export default function PaymentsPage() {
                     <EmptyState
                         icon={SearchIcon}
                         title="Nothing matches that filter"
-                        description="Clear the search box or choose a different status to see your payments again."
+                        description="Clear the search box, choose a different status or widen the dates to see your payments again."
                     />
                 ) : (
                     <EmptyState

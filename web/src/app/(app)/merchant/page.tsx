@@ -16,9 +16,10 @@ import { PaymentsDonut } from "@/components/charts/payments-donut";
 import { SalesChart, type SalesPoint } from "@/components/charts/sales-chart";
 import { ListCard } from "@/components/list-card";
 import { PageHero } from "@/components/page-hero";
+import { ChartSkeleton, DonutSkeleton, TableSkeleton } from "@/components/skeletons";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
-import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
+import { EmptyState, ErrorState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -77,7 +78,7 @@ export default function MerchantDashboardPage() {
     const mismatch = countBy("AMOUNT_MISMATCH");
     const otherPayments = Math.max(0, allPayments.length - matched - unmatched - mismatch);
 
-    if (dashboard.loading) {
+    if (dashboard.error) {
         return (
             <>
                 <PageHero
@@ -87,28 +88,18 @@ export default function MerchantDashboardPage() {
                     description="Live transaction view for your eTIMS AutoInvoice account."
                     icon={LayoutDashboardIcon}
                 />
-                <LoadingRows rows={6} />
-            </>
-        );
-    }
-
-    if (dashboard.error || !data) {
-        return (
-            <>
-                <PageHero
-                    crumb="Merchant / Dashboard"
-                    title="Your"
-                    accent="dashboard"
-                    description="Live transaction view for your eTIMS AutoInvoice account."
-                    icon={LayoutDashboardIcon}
-                />
-                <ErrorState message={dashboard.error ?? "The dashboard did not load."} onRetry={dashboard.reload} />
+                <ErrorState message={dashboard.error} onRetry={dashboard.reload} />
             </>
         );
     }
 
     const todaySeries = series.map((p) => p.sales);
     const ordersSeries = series.map((p) => p.orders);
+
+    /* The page frame renders straight away; each panel fills in as its own data lands. */
+    const loading = !data;
+    const stats = data?.stats;
+    const reveal = "animate-in fade-in duration-500";
 
     return (
         <>
@@ -127,33 +118,43 @@ export default function MerchantDashboardPage() {
                 }
             />
 
-            <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {loading ? (
+                <p role="status" className="sr-only">
+                    Loading your dashboard
+                </p>
+            ) : null}
+
+            <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-busy={loading}>
                 <StatCard
                     label="Today's sales"
-                    value={kes(data.stats.today_sales)}
+                    value={stats && kes(stats.today_sales)}
                     series={todaySeries}
+                    loading={loading}
                     icon={TrendingUpIcon}
                 />
                 <StatCard
                     label="Orders"
-                    value={String(data.stats.orders)}
+                    value={stats && String(stats.orders)}
                     series={ordersSeries}
+                    loading={loading}
                     icon={ShoppingCartIcon}
                     tone="ink"
                 />
                 <StatCard
                     label="Matched payments"
-                    value={String(data.stats.matched_payments)}
+                    value={stats && String(stats.matched_payments)}
                     delta={
-                        data.stats.unmatched_payments
-                            ? { direction: "down", text: `${data.stats.unmatched_payments} unmatched` }
+                        stats?.unmatched_payments
+                            ? { direction: "down", text: `${stats.unmatched_payments} unmatched` }
                             : undefined
                     }
+                    loading={loading}
                     icon={CreditCardIcon}
                 />
                 <StatCard
                     label="Fiscalized invoices"
-                    value={`${data.stats.fiscalized_invoices} of ${data.stats.invoices}`}
+                    value={stats && `${stats.fiscalized_invoices} of ${stats.invoices}`}
+                    loading={loading}
                     icon={FileTextIcon}
                     tone="ink"
                 />
@@ -187,7 +188,13 @@ export default function MerchantDashboardPage() {
                                 <i className="bg-chart-2 size-2 rounded-full" aria-hidden /> Orders
                             </span>
                         </div>
-                        {sales.loading ? <LoadingRows rows={3} /> : <SalesChart data={series} />}
+                        {sales.loading ? (
+                            <ChartSkeleton />
+                        ) : (
+                            <div className={reveal}>
+                                <SalesChart data={series} />
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -200,18 +207,20 @@ export default function MerchantDashboardPage() {
                     </CardHeader>
                     <CardContent>
                         {payments.loading ? (
-                            <LoadingRows rows={3} />
+                            <DonutSkeleton />
                         ) : allPayments.length ? (
-                            <PaymentsDonut
-                                total={allPayments.length}
-                                caption="payments"
-                                data={[
-                                    { name: "Matched", value: matched, colour: "var(--chart-2)" },
-                                    { name: "Unmatched", value: unmatched, colour: "var(--chart-4)" },
-                                    { name: "Amount mismatch", value: mismatch, colour: "var(--chart-1)" },
-                                    { name: "Other", value: otherPayments, colour: "var(--chart-5)" },
-                                ]}
-                            />
+                            <div className={reveal}>
+                                <PaymentsDonut
+                                    total={allPayments.length}
+                                    caption="payments"
+                                    data={[
+                                        { name: "Matched", value: matched, colour: "var(--chart-2)" },
+                                        { name: "Unmatched", value: unmatched, colour: "var(--chart-4)" },
+                                        { name: "Amount mismatch", value: mismatch, colour: "var(--chart-1)" },
+                                        { name: "Other", value: otherPayments, colour: "var(--chart-5)" },
+                                    ]}
+                                />
+                            </div>
                         ) : (
                             <EmptyState
                                 icon={CreditCardIcon}
@@ -236,8 +245,19 @@ export default function MerchantDashboardPage() {
                         </Button>
                     }
                 >
-                    {data.orders.length ? (
-                        <Table>
+                    {loading ? (
+                        <TableSkeleton
+                            rows={8}
+                            delay={4}
+                            columns={[
+                                { kind: "mono" },
+                                { kind: "text", className: "@max-xl:hidden" },
+                                { kind: "amount" },
+                                { kind: "badge" },
+                            ]}
+                        />
+                    ) : data.orders.length ? (
+                        <Table className={reveal}>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Order</TableHead>
@@ -280,8 +300,20 @@ export default function MerchantDashboardPage() {
                         </Button>
                     }
                 >
-                    {data.payments.length ? (
-                        <Table>
+                    {loading ? (
+                        <TableSkeleton
+                            rows={8}
+                            delay={5}
+                            columns={[
+                                { kind: "mono" },
+                                { kind: "mono", className: "@max-xl:hidden" },
+                                { kind: "amount" },
+                                { kind: "badge" },
+                                { kind: "time", className: "@max-md:hidden" },
+                            ]}
+                        />
+                    ) : data.payments.length ? (
+                        <Table className={reveal}>
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>M-Pesa ref</TableHead>
@@ -319,9 +351,11 @@ export default function MerchantDashboardPage() {
                 </ListCard>
             </div>
 
-            <p className="text-muted-foreground mt-2 text-xs">
-                Last refreshed {dateTime(new Date().toISOString())} EAT
-            </p>
+            {loading ? null : (
+                <p className="text-muted-foreground mt-2 text-xs">
+                    Last refreshed {dateTime(new Date().toISOString())} EAT
+                </p>
+            )}
         </>
     );
 }

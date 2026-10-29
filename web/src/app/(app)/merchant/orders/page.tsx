@@ -5,6 +5,7 @@ import { PlusIcon, SearchIcon, ShoppingCartIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
@@ -38,6 +39,8 @@ export default function OrdersPage() {
 
         return matchesStatus && haystack.includes(query.toLowerCase().trim());
     });
+
+    const paged = usePagination(visible, `${query}|${status}`);
 
     return (
         <>
@@ -83,7 +86,7 @@ export default function OrdersPage() {
                         </Select>
                     </>
                 }
-                footer={<span>Showing {visible.length} of {all.length} orders</span>}
+                footer={<TablePagination pagination={paged} noun="orders" unfiltered={all.length} />}
             >
                 {orders.loading ? (
                     <LoadingRows />
@@ -99,7 +102,7 @@ export default function OrdersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visible.map((sale) => (
+                            {paged.rows.map((sale) => (
                                 <TableRow key={sale.id}>
                                     <TableCell className="font-mono text-xs">{sale.order_reference}</TableCell>
                                     <TableCell className="hidden sm:table-cell">{sale.customer_name}</TableCell>

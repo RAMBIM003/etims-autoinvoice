@@ -5,6 +5,7 @@ import { BoxesIcon, PlusIcon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
@@ -39,6 +40,7 @@ export default function ItemsPage() {
     const visible = all.filter((item) =>
         `${item.name} ${item.sku ?? ""}`.toLowerCase().includes(query.toLowerCase().trim())
     );
+    const paged = usePagination(visible, query);
     const unclassified = all.filter((item) => !item.tax_type_code).length;
 
     return (
@@ -80,7 +82,7 @@ export default function ItemsPage() {
                         />
                     </div>
                 }
-                footer={<span>Showing {visible.length} of {all.length} items</span>}
+                footer={<TablePagination pagination={paged} noun="items" unfiltered={all.length} />}
             >
                 {items.loading ? (
                     <LoadingRows />
@@ -97,7 +99,7 @@ export default function ItemsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visible.map((item) => (
+                            {paged.rows.map((item) => (
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">{item.name}</TableCell>
                                     <TableCell className="text-muted-foreground hidden font-mono text-xs sm:table-cell">

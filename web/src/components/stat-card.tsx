@@ -3,6 +3,7 @@ import { TrendingDownIcon, TrendingUpIcon } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { Sparkline } from "@/components/charts/sparkline";
+import { StatValueSkeleton } from "@/components/skeletons";
 import { cn } from "@/lib/utils";
 
 export function StatCard({
@@ -12,13 +13,16 @@ export function StatCard({
     series,
     icon: Icon,
     tone = "brand",
+    loading = false,
 }: {
     label: string;
-    value: string;
+    value?: string;
     delta?: { direction: "up" | "down"; text: string };
     series?: number[];
     icon: LucideIcon;
     tone?: "brand" | "ink";
+    /** Shows the label and icon, with a placeholder where the figures go. */
+    loading?: boolean;
 }) {
     const Arrow = delta?.direction === "down" ? TrendingDownIcon : TrendingUpIcon;
 
@@ -34,8 +38,12 @@ export function StatCard({
             </span>
             <div className="min-w-0 flex-1">
                 <p className="text-muted-foreground truncate text-xs font-semibold">{label}</p>
-                <p className="tabular truncate text-xl font-extrabold tracking-tight">{value}</p>
-                {delta ? (
+                {loading ? (
+                    <StatValueSkeleton sparkline={!!series} />
+                ) : (
+                    <p className="tabular truncate text-xl font-extrabold tracking-tight">{value}</p>
+                )}
+                {!loading && delta ? (
                     <p
                         className={cn(
                             "mt-0.5 flex items-center gap-1 text-xs font-semibold",
@@ -46,7 +54,7 @@ export function StatCard({
                         {delta.text}
                     </p>
                 ) : null}
-                {series?.length ? (
+                {!loading && series?.length ? (
                     <Sparkline values={series} tone={tone} className="mt-1.5" />
                 ) : null}
             </div>
