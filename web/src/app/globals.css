@@ -1,0 +1,263 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   The eTIMS palette. Edit the brand ramp here to rebrand the whole app; every
+   other token below resolves from it, and the shadcn component variables are
+   mapped onto the same names so the library is on-brand without overrides.
+--------------------------------------------------------------------------- */
+:root {
+    /* Brand ramp */
+    --red-50: #fff1f2;
+    --red-100: #fdecee;
+    --red-200: #fbd9de;
+    --red-300: #f5a3ae;
+    --red-400: #f0384b;
+    --red-500: #d9162b;   /* the brand red */
+    --red-600: #b81224;
+    --red-700: #94101e;
+    --red-800: #6e0d17;
+    --red-900: #4a0a10;
+
+    /* Secondary accents: gold carries money, teal carries "verified with KRA" */
+    --gold-400: #f0b857;
+    --gold-500: #e9a23b;
+    --teal-400: #2dd4bf;
+    --teal-500: #0e9f8e;
+
+    --radius: 0.75rem;
+
+    /* --- Light theme --- */
+    --background: #f4f5f8;
+    --foreground: #0f172a;
+
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+
+    --primary: var(--red-500);
+    --primary-foreground: #ffffff;
+    --primary-soft: var(--red-100);
+
+    --secondary: #f0f2f6;
+    --secondary-foreground: #0f172a;
+
+    --muted: #f8f9fc;
+    --muted-foreground: #6b7385;
+
+    --accent: var(--red-100);
+    --accent-foreground: var(--red-600);
+
+    --destructive: #991b1b;
+    --destructive-foreground: #ffffff;
+
+    --border: #e8ebf1;
+    --input: #d8dde7;
+    --ring: color-mix(in srgb, var(--red-500) 45%, transparent);
+
+    /* Dark bands: the hero banner and the table head. Near-black on a pale
+       canvas; in dark mode they lift above the canvas instead. */
+    --band: #0e1015;
+    --band-foreground: #ffffff;
+    --band-muted: #a7afbd;
+
+    /* Status. Each pairs a readable text colour with the tint it sits on. */
+    --ok: #166534;
+    --ok-soft: #e2f6ea;
+    --ok-border: #cfe9d8;
+    --warn: #92400e;
+    --warn-soft: #fff3d6;
+    --warn-border: #f6d9a0;
+    --bad: #991b1b;
+    --bad-soft: #fee2e2;
+    --bad-border: #fecaca;
+    --info: #1d4ed8;
+    --info-soft: #e4ebff;
+    --info-border: #c7d5ff;
+
+    /* Data series, read by the charts at render time */
+    --chart-1: var(--red-500);
+    --chart-2: #111827;
+    --chart-3: var(--teal-500);
+    --chart-4: var(--gold-500);
+    --chart-5: #6366f1;
+    --chart-grid: #e9ecf2;
+    --chart-label: #64748b;
+
+    /* The sidebar keeps its own surface: dark in both themes, by design */
+    --sidebar: #0e1015;
+    --sidebar-foreground: #c3c9d4;
+    --sidebar-primary: var(--red-500);
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: rgba(255, 255, 255, 0.07);
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: rgba(255, 255, 255, 0.09);
+    --sidebar-ring: color-mix(in srgb, var(--red-500) 45%, transparent);
+}
+
+.dark {
+    --background: #0a0c10;
+    --foreground: #e9ecf2;
+
+    --card: #13161d;
+    --card-foreground: #e9ecf2;
+    --popover: #13161d;
+    --popover-foreground: #e9ecf2;
+
+    --primary: var(--red-400);
+    --primary-foreground: #ffffff;
+    --primary-soft: rgba(240, 56, 75, 0.14);
+
+    --secondary: #1e232c;
+    --secondary-foreground: #e9ecf2;
+
+    --muted: #181c24;
+    --muted-foreground: #8a93a3;
+
+    --accent: rgba(240, 56, 75, 0.14);
+    --accent-foreground: #ff7b88;
+
+    --destructive: #ff8d99;
+    --destructive-foreground: #13161d;
+
+    --border: #262c37;
+    --input: #333a47;
+    --ring: color-mix(in srgb, var(--red-400) 50%, transparent);
+
+    --band: #1e232c;
+    --band-foreground: #f2f4f8;
+    --band-muted: #8a93a3;
+
+    --ok: #4ade80;
+    --ok-soft: rgba(74, 222, 128, 0.13);
+    --ok-border: rgba(74, 222, 128, 0.28);
+    --warn: #fbbf24;
+    --warn-soft: rgba(251, 191, 36, 0.13);
+    --warn-border: rgba(251, 191, 36, 0.28);
+    --bad: #ff8d99;
+    --bad-soft: rgba(255, 141, 153, 0.13);
+    --bad-border: rgba(255, 141, 153, 0.28);
+    --info: #7fa8ff;
+    --info-soft: rgba(127, 168, 255, 0.13);
+    --info-border: rgba(127, 168, 255, 0.28);
+
+    --chart-1: var(--red-400);
+    --chart-2: #e9ecf2;
+    --chart-3: var(--teal-400);
+    --chart-4: var(--gold-400);
+    --chart-5: #a5b4fc;
+    --chart-grid: #262c37;
+    --chart-label: #8a93a3;
+
+    --sidebar: #13161d;
+    --sidebar-foreground: #b4bcca;
+    --sidebar-primary: var(--red-400);
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: rgba(255, 255, 255, 0.06);
+    --sidebar-accent-foreground: #f2f4f8;
+    --sidebar-border: rgba(255, 255, 255, 0.07);
+}
+
+/* Expose the tokens to Tailwind as utility colours (bg-card, text-ok, ...) */
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-primary-soft: var(--primary-soft);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --color-band: var(--band);
+    --color-band-foreground: var(--band-foreground);
+    --color-band-muted: var(--band-muted);
+
+    --color-ok: var(--ok);
+    --color-ok-soft: var(--ok-soft);
+    --color-ok-border: var(--ok-border);
+    --color-warn: var(--warn);
+    --color-warn-soft: var(--warn-soft);
+    --color-warn-border: var(--warn-border);
+    --color-bad: var(--bad);
+    --color-bad-soft: var(--bad-soft);
+    --color-bad-border: var(--bad-border);
+    --color-info: var(--info);
+    --color-info-soft: var(--info-soft);
+    --color-info-border: var(--info-border);
+
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-jakarta), var(--font-inter), ui-sans-serif, sans-serif;
+    --font-mono: var(--font-mono-stack), ui-monospace, monospace;
+
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+    * {
+        @apply border-border outline-ring/50;
+    }
+
+    html {
+        background-color: var(--background);
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-background text-foreground antialiased;
+        font-feature-settings: "cv11";
+    }
+
+    /* Native controls and scrollbars follow the theme */
+    :root { color-scheme: light; }
+    .dark { color-scheme: dark; }
+
+    h1, h2, h3 {
+        @apply font-display tracking-tight;
+        text-wrap: balance;
+    }
+
+    /* Money and counts line up as values change */
+    .tabular {
+        font-variant-numeric: tabular-nums;
+    }
+}
+
+/* The app canvas never scrolls sideways; wide tables scroll inside their card */
+@layer utilities {
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}

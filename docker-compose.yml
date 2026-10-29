@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: etims-backend
+    env_file: .env
+    environment:
+      PORT: 5000
+    volumes:
+      - ./database:/database:ro
+    networks:
+      - etims-internal
+      - tender-scraper_default
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./web
+    container_name: etims-frontend
+    environment:
+      # Where the Next proxy forwards /api/*. Read per request, so this can
+      # change without rebuilding the image.
+      API_ORIGIN: http://backend:5000
+    ports:
+      - "8081:3000"
+    depends_on:
+      - backend
+    networks:
+      - etims-internal
+    restart: unless-stopped
+
+networks:
+  etims-internal:
+    driver: bridge
+  tender-scraper_default:
+    external: true
