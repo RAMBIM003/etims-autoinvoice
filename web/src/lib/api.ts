@@ -77,7 +77,9 @@ export async function request<T = unknown>(path: string, options: RequestOptions
             window.location.assign(new URL("/sign-in", window.location.origin));
         }
 
-        throw new ApiError("Your session has expired. Sign in again.", 401);
+        /* Only a request that carried a token can have an expired session; a
+           401 without one (a wrong password at sign-in) keeps the API's message. */
+        if (token) throw new ApiError("Your session has expired. Sign in again.", 401);
     }
 
     if (!response.ok) {

@@ -1,9 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { BellIcon, SearchIcon } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { BellIcon, LogOutIcon, SearchIcon } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,17 +19,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { clearToken } from "@/lib/api";
+import type { NavItem } from "@/lib/nav";
 
 export type Notice = { id: string; title: string; detail: string; tone: "ok" | "warn" | "bad" };
+
+/* "Otieno Logistics Ltd" -> "OL"; one word gives its first two letters. */
+function initials(name: string) {
+    const words = name.trim().split(/\s+/).filter(Boolean);
+    const letters = words.length > 1 ? words[0][0] + words[1][0] : (words[0] ?? "").slice(0, 2);
+
+    return letters.toUpperCase() || "?";
+}
 
 export function SiteHeader({
     searchPlaceholder,
     notices = [],
+    accountName,
+    accountItems,
 }: {
     searchPlaceholder: string;
     notices?: Notice[];
+    accountName: string;
+    accountItems: NavItem[];
 }) {
     const [query, setQuery] = React.useState("");
+    const router = useRouter();
+
+    function signOut() {
+        clearToken();
+        router.push("/sign-in");
+    }
 
     return (
         <header className="bg-card sticky top-0 z-30 flex items-center gap-2 border-b px-3 py-2.5 sm:gap-3 sm:px-6">
@@ -81,6 +104,33 @@ export function SiteHeader({
                                 Nothing needs your attention.
                             </p>
                         )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="icon" className="p-0" aria-label="Account menu">
+                            <Avatar className="size-full rounded-[inherit]">
+                                <AvatarFallback className="rounded-[inherit]">{initials(accountName)}</AvatarFallback>
+                            </Avatar>
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel className="truncate">{accountName}</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {accountItems.map((item) => (
+                            <DropdownMenuItem key={item.href} asChild>
+                                <Link href={item.href}>
+                                    <item.icon />
+                                    {item.label}
+                                </Link>
+                            </DropdownMenuItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onSelect={signOut}>
+                            <LogOutIcon />
+                            Sign out
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>

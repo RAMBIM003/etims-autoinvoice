@@ -5,6 +5,7 @@ import {
     LayoutDashboard,
     Link2,
     MapPin,
+    Settings,
     Receipt,
     ShoppingCart,
     Store,
@@ -26,11 +27,19 @@ export const merchantNav: NavItem[] = [
     { href: "/merchant/items", label: "Items", icon: Boxes, description: "Catalogue and KRA classification" },
     { href: "/merchant/branches", label: "Branches", icon: MapPin, description: "Registered trading locations" },
     { href: "/merchant/connections", label: "Connections", icon: Link2, description: "KRA eTIMS and M-Pesa" },
-    { href: "/merchant/profile", label: "Business profile", icon: Store, description: "Your registered details" },
 ];
 
 export const buyerNav: NavItem[] = [
     { href: "/buyer", label: "My purchases", icon: ShoppingCart, description: "Everything you have bought" },
     { href: "/buyer/receipts", label: "Receipts", icon: Receipt, description: "Fiscal receipts from KRA" },
+];
+
+/* Account pages live in the avatar menu in the header, not the sidebar. */
+export const merchantAccountNav: NavItem[] = [
+    { href: "/merchant/profile", label: "Business profile", icon: Store, description: "Your registered details" },
+    { href: "/merchant/connections", label: "Settings", icon: Settings, description: "KRA eTIMS and M-Pesa" },
+];
+
+export const buyerAccountNav: NavItem[] = [
     { href: "/buyer/profile", label: "Profile", icon: UserRound, description: "Phone, PIN and M-Pesa name" },
 ];

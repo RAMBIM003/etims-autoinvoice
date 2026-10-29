@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { ActivityIcon, LifeBuoyIcon, LogOutIcon, StoreIcon, UserRoundIcon } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ActivityIcon, LifeBuoyIcon, StoreIcon, UserRoundIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -19,7 +19,6 @@ import {
     SidebarSeparator,
     useSidebar,
 } from "@/components/ui/sidebar";
-import { clearToken } from "@/lib/api";
 import type { NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
@@ -37,16 +36,10 @@ export function AppSidebar({
     systemNote: string;
 }) {
     const pathname = usePathname();
-    const router = useRouter();
     const { state, isMobile, setOpenMobile } = useSidebar();
     const collapsed = state === "collapsed";
 
     const AudienceIcon = audience === "Merchant" ? StoreIcon : UserRoundIcon;
-
-    function signOut() {
-        clearToken();
-        router.push("/sign-in");
-    }
 
     return (
         <Sidebar collapsible="icon">
@@ -143,12 +136,6 @@ export function AppSidebar({
                                 <LifeBuoyIcon />
                                 <span>Contact support</span>
                             </a>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton variant="ghost" tooltip="Sign out" onClick={signOut}>
-                            <LogOutIcon />
-                            <span>Sign out</span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

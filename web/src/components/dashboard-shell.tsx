@@ -6,7 +6,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader, type Notice } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { api } from "@/lib/api";
-import { buyerNav, merchantNav } from "@/lib/nav";
+import { buyerAccountNav, buyerNav, merchantAccountNav, merchantNav } from "@/lib/nav";
 import type { ConnectionsPayload } from "@/lib/types";
 
 type Shell = {
@@ -125,6 +125,8 @@ export function DashboardShell({
                             : "Search purchases, receipts or reference"
                     }
                     notices={shell.notices}
+                    accountName={shell.account}
+                    accountItems={isMerchant ? merchantAccountNav : buyerAccountNav}
                 />
                 <div className="mx-auto w-full max-w-[1400px] flex-1 px-3 pt-4 pb-10 sm:px-6">{children}</div>
             </SidebarInset>
