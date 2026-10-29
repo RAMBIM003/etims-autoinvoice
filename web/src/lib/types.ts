@@ -169,6 +169,8 @@ export type BuyerPurchase = {
     invoice?: { id: string; number: string; status: string; kra_receipt_number?: string | null } | null;
     stage: string;
     receipt_url?: string | null;
+    /** What was bought, in line order. */
+    items?: { item_name: string; quantity: string | number; unit_code?: string | null }[];
 };
 
 export type ConnectionsPayload = {

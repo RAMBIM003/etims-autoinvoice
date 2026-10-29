@@ -196,7 +196,27 @@ r.get('/orders', auth, wrap(async (q, s) => {
         )
     ).rows;
 
-    s.json({ orders: await Promise.all(sales.map(x => describe(x))) });
+    // What was bought, so the buyer can recognise a purchase at a glance.
+    // One query for every order on the page rather than one per order.
+    const lines = (
+        await db.query(
+            `SELECT sale_id, item_name, quantity, unit_code
+             FROM sale_items
+             WHERE sale_id = ANY($1)
+             ORDER BY sale_id, line_number`,
+            [sales.map(x => x.id)]
+        )
+    ).rows;
+
+    const orders = await Promise.all(sales.map(x => describe(x)));
+
+    for (const order of orders) {
+        order.items = lines
+            .filter(line => line.sale_id === order.order.id)
+            .map(({ item_name, quantity, unit_code }) => ({ item_name, quantity, unit_code }));
+    }
+
+    s.json({ orders });
 }));
 
 r.get('/orders/:id/status', auth, wrap(async (q, s) => {
