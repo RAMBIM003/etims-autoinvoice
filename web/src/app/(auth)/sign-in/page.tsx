@@ -53,7 +53,7 @@ export default function SignInPage() {
         setBusy(true);
 
         try {
-            await api.sendOtp({ destination: phone.trim(), purpose: "LOGIN" });
+            await api.sendOtp({ phone: phone.trim(), purpose: "LOGIN" });
             setCodeSent(true);
         } catch (err) {
             setError(err instanceof ApiError ? err.message : "The code could not be sent.");
@@ -68,7 +68,7 @@ export default function SignInPage() {
         setBusy(true);
 
         try {
-            const result = await api.loginWithOtp({ destination: phone.trim(), code: code.trim() });
+            const result = await api.loginWithOtp({ phone: phone.trim(), code: code.trim() });
 
             setToken(result.token);
             land(result.role);

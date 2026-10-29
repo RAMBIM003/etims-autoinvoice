@@ -18,6 +18,7 @@ export default function BuyerSignUpPage() {
     const [error, setError] = React.useState<string | null>(null);
     const [consent, setConsent] = React.useState(false);
     const [mpesaConsent, setMpesaConsent] = React.useState(false);
+    const [codeSent, setCodeSent] = React.useState(false);
     const [busy, setBusy] = React.useState(false);
 
     async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -42,9 +43,25 @@ export default function BuyerSignUpPage() {
             return;
         }
 
+        const phone = String(form.get("phone") ?? "").trim();
+
         setBusy(true);
 
+        if (!codeSent) {
+            try {
+                await api.sendOtp({ phone, purpose: "SIGNUP_BUYER" });
+                setCodeSent(true);
+            } catch (err) {
+                setError(err instanceof ApiError ? err.message : "Could not send the code.");
+            } finally {
+                setBusy(false);
+            }
+            return;
+        }
+
         try {
+            await api.verifyOtp({ phone, code: String(form.get("code") ?? "").trim(), purpose: "SIGNUP_BUYER" });
+
             const result = (await api.registerBuyer({
                 name: String(form.get("name") ?? "").trim(),
                 email: String(form.get("email") ?? "").trim(),
@@ -126,7 +143,14 @@ export default function BuyerSignUpPage() {
                     <span>I agree to link my M-Pesa payments to this account so my receipts can be matched.</span>
                 </Label>
 
-                <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
+                {codeSent ? (
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="code">Code sent to your phone</Label>
+                        <Input id="code" name="code" inputMode="numeric" required autoComplete="one-time-code" placeholder="6-digit code" />
+                    </div>
+                ) : null}
+
+                <Button type="submit" disabled={busy}>{busy ? "Working…" : codeSent ? "Create account" : "Send code"}</Button>
             </form>
 
             {error ? <div className="mt-4"><ErrorState message={error} /></div> : null}
