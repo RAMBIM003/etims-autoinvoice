@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { FileTextIcon, SearchIcon } from "lucide-react";
+import Link from "next/link";
+import { EyeIcon, FileTextIcon, MoreHorizontalIcon, PrinterIcon, SearchIcon } from "lucide-react";
 
 import { ANY_DATE, DateRangeFilter, type DateRange, inRange } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
@@ -10,6 +11,10 @@ import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -104,12 +109,23 @@ export default function InvoicesPage() {
                                 <TableHead>Status</TableHead>
                                 <TableHead className="hidden md:table-cell">CU number</TableHead>
                                 <TableHead className="hidden xl:table-cell">Fiscalized</TableHead>
+                                <TableHead className="w-10">
+                                    <span className="sr-only">Actions</span>
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {paged.rows.map((invoice) => (
                                 <TableRow key={invoice.id}>
-                                    <TableCell className="font-mono text-xs">{invoice.invoice_number}</TableCell>
+                                    <TableCell className="font-mono text-xs">
+                                        <Link
+                                            href={`/invoices/${invoice.id}`}
+                                            className="text-primary font-semibold underline-offset-4 hover:underline focus-visible:underline"
+                                            title="Open invoice"
+                                        >
+                                            {invoice.invoice_number}
+                                        </Link>
+                                    </TableCell>
                                     <TableCell className="hidden sm:table-cell">
                                         {invoice.buyer_name || "Walk-in buyer"}
                                     </TableCell>
@@ -126,6 +142,9 @@ export default function InvoicesPage() {
                                         {invoice.fiscalized_at ? dateTime(invoice.fiscalized_at) : (
                                             <Badge variant="outline">Not yet</Badge>
                                         )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <InvoiceActions id={invoice.id} number={invoice.invoice_number} />
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -146,5 +165,31 @@ export default function InvoicesPage() {
                 )}
             </ListCard>
         </>
+    );
+}
+
+/** View and print for one invoice, behind the row's "⋯" button. */
+function InvoiceActions({ id, number }: { id: string; number: string }) {
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${number}`}>
+                    <MoreHorizontalIcon />
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel className="text-muted-foreground font-mono text-xs font-normal">{number}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                    <Link href={`/invoices/${id}`}>
+                        <EyeIcon /> View invoice
+                    </Link>
+                </DropdownMenuItem>
+                {/* A new tab keeps the list where it was; that tab prints itself once the invoice is drawn. */}
+                <DropdownMenuItem onSelect={() => window.open(`/invoices/${id}?print=1`, "_blank", "noopener")}>
+                    <PrinterIcon /> Print invoice
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
 }
