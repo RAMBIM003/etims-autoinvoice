@@ -14,7 +14,9 @@ r.post('/otp/verify',wrap(async(q,s)=>{
  const{phone,code,purpose}=q.body;
  if(!PURPOSES.includes(purpose)||!C.phoneOk(phone))throw fail('Invalid request',400);
  await otp.verify(phone,code,purpose);s.json({verified:true})}));
-const login=async(u,s)=>{await db.query('UPDATE users SET last_login_at=now() WHERE id=$1',[u.id]);s.json({token:auth.sign(u.id)})};
+// role tells the app which side to open: merchant first for a user who is both.
+const roleOf=async id=>(await db.query("SELECT 1 FROM merchant_users WHERE user_id=$1 AND status='ACTIVE' LIMIT 1",[id])).rows.length?'MERCHANT':(await db.query('SELECT 1 FROM buyers WHERE user_id=$1',[id])).rows.length?'BUYER':null;
+const login=async(u,s)=>{await db.query('UPDATE users SET last_login_at=now() WHERE id=$1',[u.id]);s.json({token:auth.sign(u.id),role:await roleOf(u.id)})};
 r.post('/auth/login',wrap(async(q,s)=>{
  const id=String(q.body.identifier||'').trim().toLowerCase();
  const u=id.includes('@')?(await db.query('SELECT * FROM users WHERE email=$1',[id])).rows[0]:(C.phoneOk(id)?await byPhone(C.phoneHash(id)):null);
