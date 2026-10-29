@@ -4,6 +4,7 @@ import * as React from "react";
 import { FileTextIcon, SearchIcon } from "lucide-react";
 
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
@@ -34,6 +35,8 @@ export default function InvoicesPage() {
 
         return matchesStatus && haystack.includes(query.toLowerCase().trim());
     });
+
+    const paged = usePagination(visible, `${query}|${status}`);
 
     return (
         <>
@@ -78,7 +81,7 @@ export default function InvoicesPage() {
                         </Select>
                     </>
                 }
-                footer={<span>Showing {visible.length} of {all.length} invoices</span>}
+                footer={<TablePagination pagination={paged} noun="invoices" unfiltered={all.length} />}
             >
                 {invoices.loading ? (
                     <LoadingRows />
@@ -97,7 +100,7 @@ export default function InvoicesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {visible.map((invoice) => (
+                            {paged.rows.map((invoice) => (
                                 <TableRow key={invoice.id}>
                                     <TableCell className="font-mono text-xs">{invoice.invoice_number}</TableCell>
                                     <TableCell className="hidden sm:table-cell">

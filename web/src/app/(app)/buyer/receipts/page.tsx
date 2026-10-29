@@ -3,6 +3,7 @@
 import { ExternalLinkIcon, ReceiptIcon } from "lucide-react";
 
 import { ListCard } from "@/components/list-card";
+import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
@@ -19,6 +20,7 @@ export default function BuyerReceiptsPage() {
     );
 
     const receipts = (purchases.data?.orders ?? []).filter((p) => p.invoice);
+    const paged = usePagination(receipts);
 
     return (
         <>
@@ -37,6 +39,7 @@ export default function BuyerReceiptsPage() {
                 title="Receipts"
                 count={receipts.length}
                 description="Newest first"
+                footer={<TablePagination pagination={paged} noun="receipts" />}
             >
                 {purchases.loading ? (
                     <LoadingRows />
@@ -54,7 +57,7 @@ export default function BuyerReceiptsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {receipts.map((purchase) => (
+                            {paged.rows.map((purchase) => (
                                 <TableRow key={purchase.invoice!.id}>
                                     <TableCell className="font-mono text-xs">{purchase.invoice!.number}</TableCell>
                                     <TableCell className="hidden sm:table-cell">
