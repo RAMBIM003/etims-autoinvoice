@@ -17,6 +17,7 @@ export default function BuyerSignUpPage() {
     const router = useRouter();
     const [error, setError] = React.useState<string | null>(null);
     const [consent, setConsent] = React.useState(false);
+    const [mpesaConsent, setMpesaConsent] = React.useState(false);
     const [busy, setBusy] = React.useState(false);
 
     async function submit(event: React.FormEvent<HTMLFormElement>) {
@@ -28,9 +29,20 @@ export default function BuyerSignUpPage() {
             return;
         }
 
-        setBusy(true);
-
         const form = new FormData(event.currentTarget);
+        const mpesaName = String(form.get("mpesaName") ?? "").trim();
+
+        if (mpesaName.split(/\s+/).filter(Boolean).length < 2) {
+            setError("Enter your first and last name exactly as it appears on M-Pesa.");
+            return;
+        }
+
+        if (!mpesaConsent) {
+            setError("Tick the box to link your M-Pesa payments to this account.");
+            return;
+        }
+
+        setBusy(true);
 
         try {
             const result = (await api.registerBuyer({
@@ -43,6 +55,14 @@ export default function BuyerSignUpPage() {
             })) as { token?: string };
 
             if (result.token) setToken(result.token);
+
+            try {
+                await api.saveMpesaIdentity({ mpesa_name: mpesaName, consent: true });
+            } catch {
+                /* the account exists; the profile page can finish the M-Pesa link */
+                router.push("/buyer/profile");
+                return;
+            }
 
             router.push("/buyer");
         } catch (err) {
@@ -66,6 +86,13 @@ export default function BuyerSignUpPage() {
                 <div className="grid gap-1.5">
                     <Label htmlFor="name">Your name</Label>
                     <Input id="name" name="name" required autoComplete="name" />
+                </div>
+                <div className="grid gap-1.5">
+                    <Label htmlFor="mpesaName">Name on your M-Pesa line</Label>
+                    <Input id="mpesaName" name="mpesaName" required placeholder="As it appears on M-Pesa" />
+                    <p className="text-muted-foreground text-xs">
+                        First and last name, exactly as M-Pesa shows it. Your payments are matched on this.
+                    </p>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="grid gap-1.5">
@@ -92,6 +119,11 @@ export default function BuyerSignUpPage() {
                 <Label htmlFor="buyer-consent" className="items-start gap-2.5 text-[13px] leading-relaxed font-normal">
                     <Checkbox id="buyer-consent" checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
                     <span>I agree to receive my fiscal receipts by SMS at this number.</span>
+                </Label>
+
+                <Label htmlFor="mpesa-consent" className="items-start gap-2.5 text-[13px] leading-relaxed font-normal">
+                    <Checkbox id="mpesa-consent" checked={mpesaConsent} onCheckedChange={(v) => setMpesaConsent(v === true)} className="mt-0.5" />
+                    <span>I agree to link my M-Pesa payments to this account so my receipts can be matched.</span>
                 </Label>
 
                 <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
