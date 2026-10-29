@@ -122,6 +122,14 @@ export default function SimulatorPage() {
                         {context.loading ? <LoadingRows rows={4} /> : null}
                         {context.error ? <ErrorState message={context.error} onRetry={context.reload} /> : null}
 
+                        {context.data && orders.length === 0 ? (
+                            <p className="text-muted-foreground mb-4 rounded-lg border px-4 py-3 text-sm">
+                                No orders are waiting for payment. Create an order on the{" "}
+                                <Link href="/merchant/orders" className="text-primary font-semibold">Orders page</Link>{" "}
+                                first, then come back here.
+                            </p>
+                        ) : null}
+
                         {context.data ? (
                             <form onSubmit={send} className="grid gap-4">
                                 <div className="grid gap-1.5">
