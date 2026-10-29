@@ -23,6 +23,8 @@ export type Payment = {
     created_at?: string | null;
     trans_id?: string | null;
     business_shortcode?: string | null;
+    /** The account reference the payer typed, normally an order reference. */
+    bill_ref_number?: string | null;
     payer_name?: string | null;
 };
 
