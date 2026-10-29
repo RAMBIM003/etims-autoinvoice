@@ -80,7 +80,7 @@ const transId=()=>Array.from({length:10},(_,i)=>'ABCDEFGHJKLMNPQRSTUVWXYZ0123456
       const mt=(await c.query(`INSERT INTO mpesa_transactions(trans_id,merchant_id,business_shortcode,bill_ref_number,amount,trans_time,payer_ref,payer_name,raw_callback,callback_received_at)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$6) RETURNING id`,[tid,m.id,shortcode,ref,amount,paid,'2547*****'+String(100+n).slice(-3),buyer?.name.split(' ')[0].toUpperCase()||['JOHN','MARY','PETER','GRACE'][n%4],{seeded:true}])).rows[0];
       await c.query(`INSERT INTO payments(merchant_id,sale_id,mpesa_transaction_id,amount,status,match_method,payment_reference,paid_at,created_at,updated_at)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8,$8)`,[m.id,sale.id,mt.id,amount,outcome==='MISMATCH'?'AMOUNT_MISMATCH':'MATCHED',outcome==='MISMATCH'?'BILL_REF_AMOUNT_MISMATCH':'BILL_REF_AND_AMOUNT',tid,paid]);
+        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$8,$8)`,[m.id,sale.id,mt.id,amount,outcome==='MISMATCH'?'AMOUNT_MISMATCH':'MATCHED',outcome==='MISMATCH'?'BILL_REF_AMOUNT_MISMATCH':'BILL_REF_AND_AMOUNT',ref,paid]);
       counts.payments++;
       if(outcome==='MISMATCH')continue;
 
@@ -104,7 +104,7 @@ const transId=()=>Array.from({length:10},(_,i)=>'ABCDEFGHJKLMNPQRSTUVWXYZ0123456
       const mt=(await c.query(`INSERT INTO mpesa_transactions(trans_id,merchant_id,business_shortcode,bill_ref_number,amount,trans_time,payer_ref,payer_name,raw_callback,callback_received_at)
         VALUES($1,$2,$3,$4,$5,$6,'2547*****999','UNKNOWN',$7,$6) RETURNING id`,[tid,m.id,shortcode,billRef,amount,paid,{seeded:true}])).rows[0];
       await c.query(`INSERT INTO payments(merchant_id,mpesa_transaction_id,amount,status,match_method,payment_reference,paid_at,created_at,updated_at) VALUES($1,$2,$3,'UNMATCHED',$4,$5,$6,$6,$6)`,
-        [m.id,mt.id,amount,method,tid,paid]);
+        [m.id,mt.id,amount,method,billRef||tid,paid]); // as routes/pay.js: the bill ref, or the M-Pesa ID when there is none
       counts.payments++;
     }
   });
