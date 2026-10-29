@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ChevronDownIcon, CreditCardIcon, DownloadIcon, PrinterIcon, SearchIcon, SheetIcon } from "lucide-react";
 
+import { ANY_DATE, DateRangeFilter, type DateRange, describeRange, inRange, isActive } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
@@ -40,6 +41,7 @@ const sum = (rows: Payment[]) => rows.reduce((total, p) => total + Number(p.amou
 export default function PaymentsPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
+    const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
 
     const payments = useApi<{ payments: Payment[] }>(
         () => api.payments() as unknown as Promise<{ payments: Payment[] }>
@@ -51,17 +53,25 @@ export default function PaymentsPage() {
         const matchesStatus = status === STATUSES[0] || payment.status === status;
         const haystack = `${payment.trans_id ?? ""} ${payment.bill_ref_number ?? ""} ${payment.payer_name ?? ""}`.toLowerCase();
 
-        return matchesStatus && haystack.includes(query.toLowerCase().trim());
+        return (
+            matchesStatus &&
+            inRange(payment.paid_at ?? payment.created_at, period) &&
+            haystack.includes(query.toLowerCase().trim())
+        );
     });
 
-    const paged = usePagination(visible, `${query}|${status}`);
+    const paged = usePagination(visible, `${query}|${status}|${period.from}|${period.to}`);
 
     /* Only for the report heading; a failure just leaves the heading shorter. */
     const merchant = useApi<ConnectionsPayload>(() => api.connections() as Promise<ConnectionsPayload>).data?.merchant;
 
+    /* "payments-2026-10-01-to-2026-10-29" when a period is set, else today's date. */
+    const exportName = `payments-${isActive(period) ? `${period.from || "start"}-to-${period.to || today()}` : today()}`;
+
     function exportPrint() {
         const matched = visible.filter((p) => p.status === "MATCHED");
         const facts: [string, string][] = [
+            ["Period", describeRange(period)],
             ["Status", status],
             ...(query.trim() ? [["Search", `"${query.trim()}"`] as [string, string]] : []),
             ["Payments", String(visible.length)],
@@ -75,7 +85,7 @@ export default function PaymentsPage() {
             subtitle: merchant ? [merchant.trading_name, merchant.kra_pin && `PIN ${merchant.kra_pin}`].filter(Boolean).join(" · ") : undefined,
             facts,
             totals: EXPORT_COLUMNS.map((c, i) => (i === 0 ? "Total" : i === EXPORT_COLUMNS.length - 1 ? kes(sum(visible)) : "")),
-            fileName: `payments-${today()}`,
+            fileName: exportName,
         });
     }
 
@@ -120,6 +130,11 @@ export default function PaymentsPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <DateRangeFilter
+                            value={period}
+                            onChange={setPeriod}
+                            hint="Payments are filtered by the day they were paid, in Nairobi time."
+                        />
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="h-9" disabled={!visible.length}>
@@ -140,7 +155,7 @@ export default function PaymentsPage() {
                                         <span className="text-muted-foreground block text-xs">A4 report with totals</span>
                                     </span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => downloadCsv(visible, EXPORT_COLUMNS, `payments-${today()}`)}>
+                                <DropdownMenuItem onSelect={() => downloadCsv(visible, EXPORT_COLUMNS, exportName)}>
                                     <SheetIcon />
                                     <span>
                                         <span className="block">Download CSV</span>
@@ -188,7 +203,7 @@ export default function PaymentsPage() {
                     <EmptyState
                         icon={SearchIcon}
                         title="Nothing matches that filter"
-                        description="Clear the search box or choose a different status to see your payments again."
+                        description="Clear the search box, choose a different status or widen the dates to see your payments again."
                     />
                 ) : (
                     <EmptyState

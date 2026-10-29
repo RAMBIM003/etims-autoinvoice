@@ -3,6 +3,7 @@
 import * as React from "react";
 import { FileTextIcon, SearchIcon } from "lucide-react";
 
+import { ANY_DATE, DateRangeFilter, type DateRange, inRange } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
@@ -22,6 +23,7 @@ const STATUSES = ["All statuses", "FISCALIZED", "PENDING", "FAILED"];
 export default function InvoicesPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
+    const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
 
     const invoices = useApi<{ invoices: Invoice[] }>(
         () => api.invoices() as unknown as Promise<{ invoices: Invoice[] }>
@@ -33,10 +35,10 @@ export default function InvoicesPage() {
         const matchesStatus = status === STATUSES[0] || invoice.fiscalization_status === status;
         const haystack = `${invoice.invoice_number} ${invoice.buyer_name ?? ""} ${invoice.kra_invoice_number ?? ""}`.toLowerCase();
 
-        return matchesStatus && haystack.includes(query.toLowerCase().trim());
+        return matchesStatus && inRange(invoice.created_at, period) && haystack.includes(query.toLowerCase().trim());
     });
 
-    const paged = usePagination(visible, `${query}|${status}`);
+    const paged = usePagination(visible, `${query}|${status}|${period.from}|${period.to}`);
 
     return (
         <>
@@ -79,6 +81,11 @@ export default function InvoicesPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <DateRangeFilter
+                            value={period}
+                            onChange={setPeriod}
+                            hint="Invoices are filtered by the day they were issued, in Nairobi time."
+                        />
                     </>
                 }
                 footer={<TablePagination pagination={paged} noun="invoices" unfiltered={all.length} />}
@@ -128,7 +135,7 @@ export default function InvoicesPage() {
                     <EmptyState
                         icon={SearchIcon}
                         title="Nothing matches that filter"
-                        description="Clear the search box or choose a different status to see your invoices again."
+                        description="Clear the search box, choose a different status or widen the dates to see your invoices again."
                     />
                 ) : (
                     <EmptyState
