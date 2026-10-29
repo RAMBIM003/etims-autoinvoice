@@ -46,6 +46,9 @@
     --secondary-foreground: #0f172a;
 
     --muted: #f8f9fc;
+
+    /* The light band that sweeps across loading placeholders. */
+    --skeleton-glint: rgba(255, 255, 255, 0.85);
     --muted-foreground: #6b7385;
 
     --accent: var(--red-100);
@@ -115,6 +118,8 @@
     --secondary-foreground: #e9ecf2;
 
     --muted: #181c24;
+
+    --skeleton-glint: rgba(255, 255, 255, 0.06);
     --muted-foreground: #8a93a3;
 
     --accent: rgba(240, 56, 75, 0.14);
@@ -260,4 +265,41 @@
 @layer utilities {
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+/*
+ * Loading placeholders. The glint is fixed to the viewport, so every
+ * placeholder on screen catches the same band of light as it passes, rather
+ * than each one blinking on its own.
+ */
+@layer components {
+    .skeleton {
+        background-color: var(--secondary);
+        background-image: linear-gradient(100deg, transparent 40%, var(--skeleton-glint) 50%, transparent 60%);
+        background-size: 200vw 100%;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+        animation: skeleton-glint 1.8s ease-in-out infinite;
+    }
+
+    /* Placeholder blocks arrive one after another; set --rise-delay per block. */
+    .skeleton-rise {
+        animation: skeleton-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+        animation-delay: var(--rise-delay, 0ms);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .skeleton { animation: none; background-image: none; }
+        .skeleton-rise { animation: none; }
+    }
+}
+
+@keyframes skeleton-glint {
+    from { background-position: -130vw 0; }
+    to { background-position: 30vw 0; }
+}
+
+@keyframes skeleton-rise {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
 }
