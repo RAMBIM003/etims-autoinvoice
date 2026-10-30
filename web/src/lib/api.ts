@@ -110,6 +110,7 @@ export const api = {
 
     /* Registration and onboarding */
     registerMerchant: (body: unknown) => post("/merchant/register", body),
+    checkMerchantPin: (body: unknown) => post("/merchant/check-pin", body),
     registerBuyer: (body: unknown) => post("/buyer/register", body),
     validateKraPin: (body: unknown) => post("/kra/validate-pin", body),
     connectKra: (body: unknown) => post("/kra/connect", body),
