@@ -40,7 +40,7 @@ async function registerUrls(shortcode) {
     }
 
     try {
-        const r = await fetch(base() + '/mpesa/c2b/v2/registerurl', {
+        const r = await fetch(base() + '/mpesa/c2b/v1/registerurl', {
             method: 'POST',
             headers: {
                 Authorization: 'Bearer ' + (await token()),

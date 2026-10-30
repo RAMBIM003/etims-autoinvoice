@@ -18,8 +18,8 @@ const PKG_UNIT = 'NT'; // Net (spec 4.5)
 
 // Quantity units from spec 4.6 that fit the two-character slot.
 // LTR/L (litres) is deliberately absent until KRA confirms the slot rule.
-const QTY_SLOT = { PCS: 'NO', NO: 'NO', KG: 'KG', BX: 'BX', PA: 'PA' };
-const LITRE_UNITS = ['LTR', 'L'];
+const QTY_SLOT = { PCS: 'NO', NO: 'NO', KG: 'KG', BX: 'BX', PA: 'PA', LTR: 'LTR', L: 'L' };
+const LITRE_UNITS = [];
 
 const CMC_HEADERS = () => ({
     tin: (process.env.KRA_PIN || '').toUpperCase(),
@@ -163,7 +163,7 @@ async function registerItem({ merchantId, itemId, classCode, taxType, itemTypeCo
                      FROM item_kra_mappings m
                      JOIN items i ON i.id = m.item_id
                      WHERE i.merchant_id = $1
-                       AND m.item_code ~ '^KE[0-9][A-Z]{4}[0-9]{7}$'`,
+                       AND m.item_code ~ '^KE[0-9][A-Z]{2,5}[0-9]{7}$'`,
                     [merchantId]
                 )
             ).rows[0].n
