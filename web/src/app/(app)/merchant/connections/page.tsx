@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Link2Icon, ShieldCheckIcon, SmartphoneIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -54,6 +55,13 @@ export default function ConnectionsPage() {
                 description="The two services this account stands on: KRA eTIMS for fiscalization, M-Pesa for payment."
                 icon={Link2Icon}
             />
+
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <p className="text-muted-foreground text-sm">Enter or change your KRA eTIMS and M-Pesa details here.</p>
+                <Button asChild>
+                    <Link href="/onboarding">Set up KRA and M-Pesa</Link>
+                </Button>
+            </div>
 
             {dashboard.error ? <ErrorState message={dashboard.error} onRetry={dashboard.reload} /> : null}
 

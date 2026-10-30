@@ -110,7 +110,34 @@ r.post('/kra/check', auth, wrap(async (q, s) => {
 
 r.post('/mpesa/register', auth, wrap(async (q, s) => {
     const merchant = await merchantForUser(q.user.sub);
-    const shortcode = String(q.body?.shortcode || '').trim();
+    const shortcode = String(q.body?.business_shortcode || q.body?.shortcode || '').trim();
+    const connectionType = String(q.body?.connection_type || 'PAYBILL').toUpperCase();
+
+    if (!/^\d{5,7}$/.test(shortcode)) {
+        throw Object.assign(new Error('Enter a valid paybill shortcode'), { status: 400 });
+    }
+
+    if (!['PAYBILL', 'TILL'].includes(connectionType)) {
+        throw Object.assign(new Error('Connection type must be PAYBILL or TILL'), { status: 400 });
+    }
+
+    // A shortcode can only belong to one business.
+    const taken = await db.query(
+        'SELECT merchant_id FROM mpesa_connections WHERE business_shortcode = $1',
+        [shortcode]
+    );
+
+    if (taken.rows[0] && taken.rows[0].merchant_id !== merchant.id) {
+        throw Object.assign(new Error('This shortcode is linked to another business'), { status: 409 });
+    }
+
+    if (!taken.rows[0]) {
+        await db.query(
+            `INSERT INTO mpesa_connections (merchant_id, connection_type, environment, business_shortcode)
+             VALUES ($1, $2, $3, $4)`,
+            [merchant.id, connectionType, process.env.MPESA_ENV || 'sandbox', shortcode]
+        );
+    }
 
     const result = await db.query(
         `SELECT *

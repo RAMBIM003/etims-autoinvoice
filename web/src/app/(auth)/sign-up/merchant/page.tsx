@@ -18,6 +18,7 @@ export default function MerchantSignUpPage() {
     const [error, setError] = React.useState<string | null>(null);
     const [consent, setConsent] = React.useState(false);
     const [busy, setBusy] = React.useState(false);
+    const [codeSent, setCodeSent] = React.useState(false);
 
     async function submit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
@@ -28,11 +29,26 @@ export default function MerchantSignUpPage() {
             return;
         }
 
+        const form = new FormData(event.currentTarget);
+        const phone = String(form.get("phone") ?? "").trim();
+
         setBusy(true);
 
-        const form = new FormData(event.currentTarget);
+        if (!codeSent) {
+            try {
+                await api.sendOtp({ phone, purpose: "SIGNUP_MERCHANT" });
+                setCodeSent(true);
+            } catch (err) {
+                setError(err instanceof ApiError ? err.message : "Could not send the code.");
+            } finally {
+                setBusy(false);
+            }
+            return;
+        }
 
         try {
+            await api.verifyOtp({ phone, code: String(form.get("code") ?? "").trim(), purpose: "SIGNUP_MERCHANT" });
+
             const result = (await api.registerMerchant({
                 fullName: String(form.get("fullName") ?? "").trim(),
                 business: String(form.get("business") ?? "").trim(),
@@ -87,6 +103,13 @@ export default function MerchantSignUpPage() {
                     <p className="text-muted-foreground text-xs">At least 8 characters.</p>
                 </div>
 
+                {codeSent ? (
+                    <div className="grid gap-1.5">
+                        <Label htmlFor="code">Code sent to your phone</Label>
+                        <Input id="code" name="code" inputMode="numeric" required autoComplete="one-time-code" placeholder="6-digit code" />
+                    </div>
+                ) : null}
+
                 <Label htmlFor="consent" className="items-start gap-2.5 text-[13px] leading-relaxed font-normal">
                     <Checkbox id="consent" checked={consent} onCheckedChange={(v) => setConsent(v === true)} className="mt-0.5" />
                     <span>
@@ -94,7 +117,7 @@ export default function MerchantSignUpPage() {
                     </span>
                 </Label>
 
-                <Button type="submit" disabled={busy}>{busy ? "Creating account…" : "Create account"}</Button>
+                <Button type="submit" disabled={busy}>{busy ? "Working…" : codeSent ? "Create account" : "Send code"}</Button>
             </form>
 
             {error ? <div className="mt-4"><ErrorState message={error} /></div> : null}
