@@ -47,7 +47,10 @@ r.post('/merchant/register', wrap(async (q, s) => {
     need(['PAYBILL', 'TILL'].includes(connectionType), 'Connection type must be PAYBILL or TILL');
 
     // KRA checks run before the transaction: they are network calls.
-    const pinCheck = await kra.validatePin(pin);
+    // KRA_PIN_CHECK=off (POC only) skips the PIN checker; the eTIMS device check still runs.
+    const pinCheck = process.env.KRA_PIN_CHECK === 'off'
+        ? { valid: true, unavailable: false, name: null, type: null, status: 'NOT_CHECKED' }
+        : await kra.validatePin(pin);
 
     const sandboxUnavailable =
         pinCheck.unavailable &&
@@ -189,7 +192,9 @@ r.post('/merchant/check-pin', wrap(async (q, s) => {
 
     need(/^[AP]\d{9}[A-Z]$/.test(pin), 'Enter a valid KRA PIN');
 
-    const result = await kra.validatePin(pin);
+    const result = process.env.KRA_PIN_CHECK === 'off'
+        ? { valid: true, name: null, type: null, status: 'NOT_CHECKED' }
+        : await kra.validatePin(pin);
 
     if (!result.valid) {
         throw fail('This KRA PIN is not valid', 400);

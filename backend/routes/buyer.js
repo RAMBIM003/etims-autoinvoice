@@ -32,7 +32,11 @@ r.post('/buyer/register', wrap(async (q, s) => {
         throw fail('Invalid buyer registration details', 400);
     }
 
-    let k = pin ? await kra.validatePin(pin) : { valid: true, status: 'Active', name: String(b.name || '').trim() || 'Buyer', type: null, unavailable: false };
+    // KRA_PIN_CHECK=off (POC only) skips the PIN checker; live leaves it on.
+    const pinCheckOn = process.env.KRA_PIN_CHECK !== 'off';
+    let k = pin && pinCheckOn
+        ? await kra.validatePin(pin)
+        : { valid: true, status: 'Active', name: String(b.name || '').trim() || 'Buyer', type: null, unavailable: false };
     if (!k.valid && k.unavailable && String(process.env.KRA_ENV || '').toUpperCase() === 'SANDBOX') {
         k = { valid: true, status: 'Active', name: String((q.body && q.body.name) || '').trim() || 'Sandbox Buyer', type: 'UNVERIFIED' };
     }
