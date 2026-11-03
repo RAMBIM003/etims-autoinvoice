@@ -186,17 +186,34 @@ export default function ItemsPage() {
     );
 }
 
-/* One step: enter the KRA class code and press Register. Tax type is set here too if the item has none. */
+/* Search KRA's classification list, pick the class, and register in one step. */
 function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
     const [open, setOpen] = React.useState(false);
     const [busy, setBusy] = React.useState(false);
-    const [classCode, setClassCode] = React.useState("");
+    const [term, setTerm] = React.useState("");
+    const [results, setResults] = React.useState<KraClass[]>([]);
+    const [searching, setSearching] = React.useState(false);
+    const [chosen, setChosen] = React.useState<KraClass | null>(null);
     const [taxType, setTaxType] = React.useState(item.tax_type_code || "B");
 
     const isLitre = LITRE_UNITS.includes(String(item.unit_code || "").toUpperCase());
     const classified = Boolean(item.tax_type_code);
 
+    async function search() {
+        setSearching(true);
+
+        try {
+            const response = (await api.kraItemClasses(term.trim())) as { classes?: KraClass[] };
+            setResults(Array.isArray(response.classes) ? response.classes : []);
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : "KRA's classification list could not be searched.");
+        } finally {
+            setSearching(false);
+        }
+    }
+
     async function register() {
+        if (!chosen) return;
         setBusy(true);
 
         try {
@@ -209,7 +226,7 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
             }
 
             const out = (await api.registerKraItem(item.id, {
-                item_cls_code: classCode.trim(),
+                item_cls_code: chosen.code,
                 tax_type_code: tax,
                 item_type_code: "2",
             })) as { item_code?: string };
@@ -257,24 +274,55 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
                             ) : (
                                 <p className="text-muted-foreground text-sm">Tax type {item.tax_type_code}.</p>
                             )}
+
                             <div className="grid gap-1.5">
-                                <Label htmlFor="reg-cls">KRA class code</Label>
-                                <Input
-                                    id="reg-cls"
-                                    inputMode="numeric"
-                                    placeholder="e.g. 15120000"
-                                    value={classCode}
-                                    onChange={(e) => setClassCode(e.target.value)}
-                                />
-                                <p className="text-muted-foreground text-xs">The code for this item from KRA&apos;s classification list.</p>
+                                <Label htmlFor="reg-search">Search KRA&apos;s class list</Label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="reg-search"
+                                        placeholder="e.g. mining, wash, oil"
+                                        value={term}
+                                        onChange={(e) => setTerm(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") search();
+                                        }}
+                                    />
+                                    <Button variant="outline" onClick={search} disabled={searching}>
+                                        {searching ? "Searching…" : "Search"}
+                                    </Button>
+                                </div>
                             </div>
+
+                            <div className="max-h-56 overflow-auto rounded-md border">
+                                {results.map((c) => (
+                                    <button
+                                        key={c.code}
+                                        type="button"
+                                        onClick={() => setChosen(c)}
+                                        className={`hover:bg-muted/50 block w-full px-3 py-2 text-left text-sm ${
+                                            chosen?.code === c.code ? "bg-muted font-semibold" : ""
+                                        }`}
+                                    >
+                                        <span className="font-mono text-xs">{c.code}</span> {c.name}
+                                    </button>
+                                ))}
+                                {!results.length ? (
+                                    <p className="text-muted-foreground px-3 py-2 text-sm">Search to see matching classes.</p>
+                                ) : null}
+                            </div>
+
+                            {chosen ? (
+                                <p className="text-sm">
+                                    Selected: <span className="font-mono">{chosen.code}</span> {chosen.name}
+                                </p>
+                            ) : null}
                         </div>
                     )}
                 </DialogBody>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                     {isLitre ? null : (
-                        <Button onClick={register} disabled={busy || !classCode.trim()}>
+                        <Button onClick={register} disabled={busy || !chosen}>
                             {busy ? "Registering…" : "Register"}
                         </Button>
                     )}
