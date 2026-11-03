@@ -141,6 +141,7 @@ export const api = {
 
     /* Logs: errors and events from the payment-to-KRA workflow */
     logs: (query = "") => get<{ events: unknown[]; stages: string[]; outcomes: string[] }>(`/logs${query}`),
+    logProblems: () => get<{ problems: { order_reference: string; problem: string }[] }>("/logs/problems"),
 
     /* Buyer surfaces */
     buyerProfile: () => get<Record<string, unknown>>("/buyer-app/profile"),

@@ -62,6 +62,9 @@ export default function LogsPage() {
     }, [stage, outcome, search]);
 
     const logs = useApi<LogsPayload>(() => api.logs(query) as Promise<LogsPayload>, query);
+    const problems = useApi<{ problems: { order_reference: string; problem: string }[] }>(
+        () => api.logProblems() as Promise<{ problems: { order_reference: string; problem: string }[] }>
+    );
 
     const events = logs.data?.events ?? [];
     const stages = logs.data?.stages ?? [];
@@ -76,6 +79,20 @@ export default function LogsPage() {
                 description="Errors and events from the payment-to-KRA workflow, in plain words. Newest first."
                 icon={ScrollTextIcon}
             />
+
+            {problems.data && problems.data.problems.length > 0 ? (
+                <div className="grid gap-2 rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/40">
+                    <p className="text-sm font-bold text-amber-900 dark:text-amber-200">
+                        Stuck right now ({problems.data.problems.length})
+                    </p>
+                    {problems.data.problems.map((p) => (
+                        <p key={p.order_reference} className="text-sm">
+                            <span className="font-mono text-xs">{p.order_reference}</span>
+                            <span className="text-muted-foreground"> · {p.problem}</span>
+                        </p>
+                    ))}
+                </div>
+            ) : null}
 
             <div className="grid gap-3 sm:grid-cols-[1fr_180px_180px]">
                 <div className="relative">

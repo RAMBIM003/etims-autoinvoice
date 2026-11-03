@@ -81,7 +81,7 @@ async function registeredPhone(buyerId) {
 // Sends the receipt summary and private link for a fiscalized invoice.
 // options.phone  : send to this number instead of the buyer's registered one
 // options.auto   : automatic send after signing; skipped if one already went out
-async function sendReceiptSms(invoiceId, options = {}) {
+async function sendReceiptSmsInner(invoiceId, options = {}) {
     const inv = (
         await db.query(
             `SELECT i.id, i.invoice_number, i.seller_name, i.seller_pin,
@@ -206,6 +206,61 @@ async function sendReceiptSms(invoiceId, options = {}) {
              WHERE id = $2`,
             [error.message, delivery.id]
         );
+
+        throw error;
+    }
+}
+
+/*
+ * Receipt SMS results go to the Logs page, with the order reference so they can
+ * be found next to the payment and invoice.
+ */
+const events = require('./eventService');
+
+const SMS_FAILURES = [
+    ['No phone number is available', 'RS-01', 'The buyer has no phone number, so no receipt SMS was sent'],
+    ['Enter a valid Kenyan mobile number', 'RS-02', 'The buyer phone number is not valid'],
+    ['was just sent', 'RS-03', 'A receipt SMS was sent a moment ago, so this one was held back'],
+    ['not ready yet', 'RS-04', 'The receipt is not ready yet'],
+    ['Could not send the SMS', 'RS-05', 'The SMS provider did not accept the message']
+];
+
+async function sendReceiptSms(invoiceId, options = {}) {
+    const ref = (
+        await db.query(
+            'SELECT s.order_reference, s.merchant_id FROM invoices i JOIN sales s ON s.id = i.sale_id WHERE i.id = $1',
+            [invoiceId]
+        ).catch(() => ({ rows: [] }))
+    ).rows[0];
+
+    try {
+        const result = await sendReceiptSmsInner(invoiceId, options);
+
+        if (!result?.skipped) {
+            events.record({
+                merchantId: ref?.merchant_id || null,
+                stage: 'RECEIPT_SMS',
+                outcome: 'OK',
+                code: 'RS-00',
+                reference: ref?.order_reference || null,
+                invoiceId,
+                message: 'Receipt SMS sent'
+            });
+        }
+
+        return result;
+    } catch (error) {
+        const match = SMS_FAILURES.find(([text]) => error.message.includes(text));
+
+        events.record({
+            merchantId: ref?.merchant_id || null,
+            stage: 'RECEIPT_SMS',
+            outcome: 'FAILED',
+            code: match ? match[1] : 'RS-99',
+            reference: ref?.order_reference || null,
+            invoiceId,
+            message: `${match ? match[2] : 'Receipt SMS failed'}: ${error.message}`
+        });
 
         throw error;
     }
