@@ -160,7 +160,7 @@ export default function ItemsPage() {
                                         <TableCell><StatusBadge status={item.status} /></TableCell>
                                         <TableCell className="text-right">
                                             {row?.mapped ? null : (
-                                                <SetupDialog item={item} onDone={reload} />
+                                                <RegisterDialog item={item} onDone={reload} />
                                             )}
                                         </TableCell>
                                     </TableRow>
@@ -186,59 +186,35 @@ export default function ItemsPage() {
     );
 }
 
-/* Classifies an item with a KRA tax type, then registers it with KRA. */
-function SetupDialog({ item, onDone }: { item: Item; onDone: () => void }) {
+/* One step: enter the KRA class code and press Register. Tax type is set here too if the item has none. */
+function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
     const [open, setOpen] = React.useState(false);
     const [busy, setBusy] = React.useState(false);
+    const [classCode, setClassCode] = React.useState("");
     const [taxType, setTaxType] = React.useState(item.tax_type_code || "B");
-    const [term, setTerm] = React.useState("");
-    const [results, setResults] = React.useState<KraClass[]>([]);
-    const [searching, setSearching] = React.useState(false);
-    const [chosen, setChosen] = React.useState<KraClass | null>(null);
 
     const isLitre = LITRE_UNITS.includes(String(item.unit_code || "").toUpperCase());
     const classified = Boolean(item.tax_type_code);
 
-    async function classify() {
-        const rate = TAX_TYPES.find((t) => t.code === taxType)?.rate ?? 0;
-        setBusy(true);
-
-        try {
-            await api.updateItem(item.id, { tax_type_code: taxType, tax_rate: rate });
-            toast.success(`${item.name} is classified as ${taxType}.`);
-            onDone();
-        } catch (error) {
-            toast.error(error instanceof ApiError ? error.message : "The item could not be classified.");
-        } finally {
-            setBusy(false);
-        }
-    }
-
-    async function search() {
-        setSearching(true);
-
-        try {
-            const list = (await api.kraItemClasses(term.trim())) as KraClass[];
-            setResults(list);
-        } catch (error) {
-            toast.error(error instanceof ApiError ? error.message : "KRA's classification list could not be loaded.");
-        } finally {
-            setSearching(false);
-        }
-    }
-
     async function register() {
-        if (!chosen) return;
         setBusy(true);
 
         try {
+            let tax = item.tax_type_code;
+
+            if (!classified) {
+                const rate = TAX_TYPES.find((t) => t.code === taxType)?.rate ?? 0;
+                await api.updateItem(item.id, { tax_type_code: taxType, tax_rate: rate });
+                tax = taxType;
+            }
+
             const out = (await api.registerKraItem(item.id, {
-                item_cls_code: chosen.code,
-                tax_type_code: item.tax_type_code,
+                item_cls_code: classCode.trim(),
+                tax_type_code: tax,
                 item_type_code: "2",
             })) as { item_code?: string };
 
-            toast.success(`${item.name} is registered with KRA${out.item_code ? ` as ${out.item_code}` : ""}.`);
+            toast.success(`${item.name} registered with KRA${out.item_code ? ` as ${out.item_code}` : ""}.`);
             setOpen(false);
             onDone();
         } catch (error) {
@@ -251,78 +227,57 @@ function SetupDialog({ item, onDone }: { item: Item; onDone: () => void }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button variant="outline" size="sm">Set up</Button>
+                <Button variant="outline" size="sm">Register with KRA</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <BoxesIcon className="size-4" />
-                    <DialogTitle>Set up {item.name}</DialogTitle>
+                    <DialogTitle>Register {item.name}</DialogTitle>
                 </DialogHeader>
                 <DialogBody>
-                    {!classified ? (
-                        <div className="grid gap-3">
-                            <p className="text-muted-foreground text-sm">Choose the KRA tax type first.</p>
-                            <div className="grid gap-1.5">
-                                <Label htmlFor="setup-tax">KRA tax type</Label>
-                                <Select value={taxType} onValueChange={setTaxType}>
-                                    <SelectTrigger id="setup-tax"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                        {TAX_TYPES.map((t) => (
-                                            <SelectItem key={t.code} value={t.code}>{t.label}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <Button onClick={classify} disabled={busy}>{busy ? "Saving…" : "Save tax type"}</Button>
-                        </div>
-                    ) : isLitre ? (
+                    {isLitre ? (
                         <p className="text-sm">
                             Items sold by the litre ({item.unit_code}) can&apos;t be registered with KRA yet. Their unit code
                             still needs to be confirmed with KRA.
                         </p>
                     ) : (
-                        <div className="grid gap-3">
-                            <p className="text-muted-foreground text-sm">
-                                Tax type {item.tax_type_code}. Search KRA&apos;s classification list for what this item is.
-                            </p>
-                            <div className="flex gap-2">
+                        <div className="grid gap-4">
+                            {!classified ? (
+                                <div className="grid gap-1.5">
+                                    <Label htmlFor="reg-tax">KRA tax type</Label>
+                                    <Select value={taxType} onValueChange={setTaxType}>
+                                        <SelectTrigger id="reg-tax"><SelectValue /></SelectTrigger>
+                                        <SelectContent>
+                                            {TAX_TYPES.map((t) => (
+                                                <SelectItem key={t.code} value={t.code}>{t.label}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">Tax type {item.tax_type_code}.</p>
+                            )}
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="reg-cls">KRA class code</Label>
                                 <Input
-                                    placeholder="e.g. engine oil, car wash"
-                                    value={term}
-                                    onChange={(e) => setTerm(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") search();
-                                    }}
+                                    id="reg-cls"
+                                    inputMode="numeric"
+                                    placeholder="e.g. 15120000"
+                                    value={classCode}
+                                    onChange={(e) => setClassCode(e.target.value)}
                                 />
-                                <Button variant="outline" onClick={search} disabled={searching}>
-                                    {searching ? "Searching…" : "Search"}
-                                </Button>
+                                <p className="text-muted-foreground text-xs">The code for this item from KRA&apos;s classification list.</p>
                             </div>
-                            <div className="max-h-56 overflow-auto rounded-md border">
-                                {results.map((c) => (
-                                    <button
-                                        key={c.code}
-                                        type="button"
-                                        onClick={() => setChosen(c)}
-                                        className={`hover:bg-muted/50 block w-full px-3 py-2 text-left text-sm ${
-                                            chosen?.code === c.code ? "bg-muted font-semibold" : ""
-                                        }`}
-                                    >
-                                        <span className="font-mono text-xs">{c.code}</span> {c.name}
-                                    </button>
-                                ))}
-                                {!results.length ? (
-                                    <p className="text-muted-foreground px-3 py-2 text-sm">Search to see matching classes.</p>
-                                ) : null}
-                            </div>
-                            <Button onClick={register} disabled={busy || !chosen}>
-                                {busy ? "Registering…" : chosen ? `Register with KRA (${chosen.code})` : "Pick a class first"}
-                            </Button>
                         </div>
                     )}
                 </DialogBody>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                    {isLitre ? null : (
+                        <Button onClick={register} disabled={busy || !classCode.trim()}>
+                            {busy ? "Registering…" : "Register"}
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
