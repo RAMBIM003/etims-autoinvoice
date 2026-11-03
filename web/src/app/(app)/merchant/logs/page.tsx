@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ChevronDownIcon, ScrollTextIcon, SearchIcon } from "lucide-react";
 
+import { LogsTabs } from "@/components/logs-tabs";
 import { PageHero } from "@/components/page-hero";
 import { EmptyState, ErrorState, LoadingRows } from "@/components/states";
 import { Input } from "@/components/ui/input";
@@ -79,6 +80,8 @@ export default function LogsPage() {
                 description="Errors and events from the payment-to-KRA workflow, in plain words. Newest first."
                 icon={ScrollTextIcon}
             />
+
+            <LogsTabs />
 
             {problems.data && problems.data.problems.length > 0 ? (
                 <div className="grid gap-2 rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950/40">

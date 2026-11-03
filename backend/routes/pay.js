@@ -287,9 +287,10 @@ r.post('/c2b/:token/confirmation', checkToken, wrap(async (q, s) => {
             detail: { TransID: transId, BusinessShortCode: shortcode, TransAmount: body.TransAmount }
         });
 
-        return s.status(500).json({
+        // The payment was not recorded, so Safaricom gets a plain reason, not a server error.
+        return s.json({
             ResultCode: 1,
-            ResultDesc: 'Transaction processing failed'
+            ResultDesc: `Payment not recorded: ${error.message}`
         });
     }
 
@@ -310,9 +311,11 @@ r.post('/c2b/:token/confirmation', checkToken, wrap(async (q, s) => {
                 detail: { matchedPaymentId }
             });
 
-            return s.status(500).json({
-                ResultCode: 1,
-                ResultDesc: 'Matched payment processing failed'
+            // The payment itself was saved, so it is acknowledged. The fiscalization
+            // failure is on the Logs page.
+            return s.json({
+                ResultCode: 0,
+                ResultDesc: 'Accepted'
             });
         }
     }
