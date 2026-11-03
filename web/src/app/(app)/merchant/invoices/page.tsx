@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { EyeIcon, FileTextIcon, MoreHorizontalIcon, PrinterIcon, SearchIcon } from "lucide-react";
+import { EyeIcon, FileTextIcon, MoreHorizontalIcon, PrinterIcon, RotateCwIcon, SearchIcon } from "lucide-react";
+import { toast } from "sonner";
 
 import { ANY_DATE, DateRangeFilter, type DateRange, inRange } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
@@ -19,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApi } from "@/hooks/use-api";
-import { api } from "@/lib/api";
+import { ApiError, api } from "@/lib/api";
 import { dateTime, kes, statusLabel } from "@/lib/format";
 import type { Invoice } from "@/lib/types";
 
@@ -144,7 +145,13 @@ export default function InvoicesPage() {
                                         )}
                                     </TableCell>
                                     <TableCell className="text-right">
-                                        <InvoiceActions id={invoice.id} number={invoice.invoice_number} />
+                                        <InvoiceActions
+                                            id={invoice.id}
+                                            number={invoice.invoice_number}
+                                            saleId={invoice.sale_id}
+                                            status={invoice.fiscalization_status}
+                                            onChanged={invoices.reload}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -168,8 +175,27 @@ export default function InvoicesPage() {
     );
 }
 
-/** View and print for one invoice, behind the row's "⋯" button. */
-function InvoiceActions({ id, number }: { id: string; number: string }) {
+/** View, print and (when it is not signed yet) retry fiscalization, behind the row's "⋯" button. */
+function InvoiceActions({
+    id, number, saleId, status, onChanged,
+}: { id: string; number: string; saleId: string; status: string; onChanged: () => void }) {
+    const [retrying, setRetrying] = React.useState(false);
+    const canRetry = status === "PENDING" || status === "FAILED";
+
+    async function retry() {
+        setRetrying(true);
+
+        try {
+            await api.fiscalize(saleId);
+            toast.success(`${number} was sent to KRA.`);
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : "KRA did not fiscalize this invoice.");
+        } finally {
+            setRetrying(false);
+            onChanged();
+        }
+    }
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -189,6 +215,11 @@ function InvoiceActions({ id, number }: { id: string; number: string }) {
                 <DropdownMenuItem onSelect={() => window.open(`/invoices/${id}?print=1`, "_blank", "noopener")}>
                     <PrinterIcon /> Print invoice
                 </DropdownMenuItem>
+                {canRetry ? (
+                    <DropdownMenuItem disabled={retrying} onSelect={retry}>
+                        <RotateCwIcon /> {retrying ? "Sending to KRA…" : "Retry fiscalization"}
+                    </DropdownMenuItem>
+                ) : null}
             </DropdownMenuContent>
         </DropdownMenu>
     );

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BoxesIcon, PlusIcon, SearchIcon } from "lucide-react";
+import { BoxesIcon, CheckCircle2Icon, PlusIcon, SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { ListCard } from "@/components/list-card";
@@ -32,16 +32,30 @@ const TAX_TYPES = [
     { code: "E", label: "E · VAT 8%", rate: 8 },
 ];
 
+/* Litre units cannot be registered with KRA yet (main blocks them until the code is confirmed). */
+const LITRE_UNITS = ["LTR", "L"];
+
+type KraRow = { id: string; item_code: string | null; mapped: boolean | null };
+type KraClass = { code: string; name: string };
+
 export default function ItemsPage() {
     const [query, setQuery] = React.useState("");
     const items = useApi<{ items: Item[] }>(() => api.items() as unknown as Promise<{ items: Item[] }>);
+    const kra = useApi<{ items: KraRow[] }>(() => api.kraItems() as unknown as Promise<{ items: KraRow[] }>);
 
     const all = items.data?.items ?? [];
+    const kraById = new Map((kra.data?.items ?? []).map((row) => [row.id, row]));
     const visible = all.filter((item) =>
         `${item.name} ${item.sku ?? ""}`.toLowerCase().includes(query.toLowerCase().trim())
     );
     const paged = usePagination(visible, query);
     const unclassified = all.filter((item) => !item.tax_type_code).length;
+    const unregistered = all.filter((item) => !kraById.get(item.id)?.mapped).length;
+
+    function reload() {
+        items.reload();
+        kra.reload();
+    }
 
     return (
         <>
@@ -51,16 +65,25 @@ export default function ItemsPage() {
                 accent="catalogue"
                 description="What you sell, and how each line is classified for KRA."
                 icon={BoxesIcon}
-                action={<NewItemDialog onCreated={items.reload} />}
+                action={<NewItemDialog onCreated={reload} />}
             />
 
-            {items.error ? <ErrorState message={items.error} onRetry={items.reload} /> : null}
+            {items.error ? <ErrorState message={items.error} onRetry={reload} /> : null}
 
             {unclassified ? (
                 <div className="border-warn-border bg-warn-soft text-warn mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 text-sm">
                     <span className="min-w-0 flex-1">
                         <b>{unclassified} {unclassified === 1 ? "item has" : "items have"} no KRA tax type.</b>{" "}
                         Classify them before their next sale, or fiscalization will reject the invoice.
+                    </span>
+                </div>
+            ) : null}
+
+            {!unclassified && unregistered ? (
+                <div className="border-warn-border bg-warn-soft text-warn mb-4 flex flex-wrap items-center gap-3 rounded-lg border px-4 py-3 text-sm">
+                    <span className="min-w-0 flex-1">
+                        <b>{unregistered} {unregistered === 1 ? "item is" : "items are"} not registered with KRA.</b>{" "}
+                        Use Set up to register {unregistered === 1 ? "it" : "them"} before sales are fiscalized.
                     </span>
                 </div>
             ) : null}
@@ -84,7 +107,7 @@ export default function ItemsPage() {
                 }
                 footer={<TablePagination pagination={paged} noun="items" unfiltered={all.length} />}
             >
-                {items.loading ? (
+                {items.loading || kra.loading ? (
                     <LoadingRows />
                 ) : visible.length ? (
                     <Table>
@@ -95,33 +118,54 @@ export default function ItemsPage() {
                                 <TableHead>Unit price</TableHead>
                                 <TableHead>Tax type</TableHead>
                                 <TableHead className="hidden md:table-cell">Unit</TableHead>
+                                <TableHead>KRA</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead />
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paged.rows.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell className="font-medium">{item.name}</TableCell>
-                                    <TableCell className="text-muted-foreground hidden font-mono text-xs sm:table-cell">
-                                        {item.sku || "—"}
-                                    </TableCell>
-                                    <TableCell className="tabular font-bold">{kes(item.unit_price)}</TableCell>
-                                    <TableCell>
-                                        {item.tax_type_code ? (
-                                            <Badge variant="default">
-                                                {item.tax_type_code}
-                                                {item.tax_rate ? ` · ${item.tax_rate}%` : ""}
-                                            </Badge>
-                                        ) : (
-                                            <Badge variant="warn" dot>Not classified</Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground hidden md:table-cell">
-                                        {item.unit_code || "PCS"}
-                                    </TableCell>
-                                    <TableCell><StatusBadge status={item.status} /></TableCell>
-                                </TableRow>
-                            ))}
+                            {paged.rows.map((item) => {
+                                const row = kraById.get(item.id);
+
+                                return (
+                                    <TableRow key={item.id}>
+                                        <TableCell className="font-medium">{item.name}</TableCell>
+                                        <TableCell className="text-muted-foreground hidden font-mono text-xs sm:table-cell">
+                                            {item.sku || "—"}
+                                        </TableCell>
+                                        <TableCell className="tabular font-bold">{kes(item.unit_price)}</TableCell>
+                                        <TableCell>
+                                            {item.tax_type_code ? (
+                                                <Badge variant="default">
+                                                    {item.tax_type_code}
+                                                    {item.tax_rate ? ` · ${item.tax_rate}%` : ""}
+                                                </Badge>
+                                            ) : (
+                                                <Badge variant="warn" dot>Not classified</Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground hidden md:table-cell">
+                                            {item.unit_code || "PCS"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {row?.mapped ? (
+                                                <span className="flex items-center gap-1.5 font-mono text-xs text-emerald-700">
+                                                    <CheckCircle2Icon className="size-3.5" />
+                                                    {row.item_code}
+                                                </span>
+                                            ) : (
+                                                <Badge variant="warn" dot>Not registered</Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell><StatusBadge status={item.status} /></TableCell>
+                                        <TableCell className="text-right">
+                                            {row?.mapped ? null : (
+                                                <SetupDialog item={item} onDone={reload} />
+                                            )}
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            })}
                         </TableBody>
                     </Table>
                 ) : all.length ? (
@@ -139,6 +183,149 @@ export default function ItemsPage() {
                 )}
             </ListCard>
         </>
+    );
+}
+
+/* Classifies an item with a KRA tax type, then registers it with KRA. */
+function SetupDialog({ item, onDone }: { item: Item; onDone: () => void }) {
+    const [open, setOpen] = React.useState(false);
+    const [busy, setBusy] = React.useState(false);
+    const [taxType, setTaxType] = React.useState(item.tax_type_code || "B");
+    const [term, setTerm] = React.useState("");
+    const [results, setResults] = React.useState<KraClass[]>([]);
+    const [searching, setSearching] = React.useState(false);
+    const [chosen, setChosen] = React.useState<KraClass | null>(null);
+
+    const isLitre = LITRE_UNITS.includes(String(item.unit_code || "").toUpperCase());
+    const classified = Boolean(item.tax_type_code);
+
+    async function classify() {
+        const rate = TAX_TYPES.find((t) => t.code === taxType)?.rate ?? 0;
+        setBusy(true);
+
+        try {
+            await api.updateItem(item.id, { tax_type_code: taxType, tax_rate: rate });
+            toast.success(`${item.name} is classified as ${taxType}.`);
+            onDone();
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : "The item could not be classified.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    async function search() {
+        setSearching(true);
+
+        try {
+            const list = (await api.kraItemClasses(term.trim())) as KraClass[];
+            setResults(list);
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : "KRA's classification list could not be loaded.");
+        } finally {
+            setSearching(false);
+        }
+    }
+
+    async function register() {
+        if (!chosen) return;
+        setBusy(true);
+
+        try {
+            const out = (await api.registerKraItem(item.id, {
+                item_cls_code: chosen.code,
+                tax_type_code: item.tax_type_code,
+                item_type_code: "2",
+            })) as { item_code?: string };
+
+            toast.success(`${item.name} is registered with KRA${out.item_code ? ` as ${out.item_code}` : ""}.`);
+            setOpen(false);
+            onDone();
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : "KRA did not register the item.");
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm">Set up</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <BoxesIcon className="size-4" />
+                    <DialogTitle>Set up {item.name}</DialogTitle>
+                </DialogHeader>
+                <DialogBody>
+                    {!classified ? (
+                        <div className="grid gap-3">
+                            <p className="text-muted-foreground text-sm">Choose the KRA tax type first.</p>
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="setup-tax">KRA tax type</Label>
+                                <Select value={taxType} onValueChange={setTaxType}>
+                                    <SelectTrigger id="setup-tax"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        {TAX_TYPES.map((t) => (
+                                            <SelectItem key={t.code} value={t.code}>{t.label}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <Button onClick={classify} disabled={busy}>{busy ? "Saving…" : "Save tax type"}</Button>
+                        </div>
+                    ) : isLitre ? (
+                        <p className="text-sm">
+                            Items sold by the litre ({item.unit_code}) can&apos;t be registered with KRA yet. Their unit code
+                            still needs to be confirmed with KRA.
+                        </p>
+                    ) : (
+                        <div className="grid gap-3">
+                            <p className="text-muted-foreground text-sm">
+                                Tax type {item.tax_type_code}. Search KRA&apos;s classification list for what this item is.
+                            </p>
+                            <div className="flex gap-2">
+                                <Input
+                                    placeholder="e.g. engine oil, car wash"
+                                    value={term}
+                                    onChange={(e) => setTerm(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") search();
+                                    }}
+                                />
+                                <Button variant="outline" onClick={search} disabled={searching}>
+                                    {searching ? "Searching…" : "Search"}
+                                </Button>
+                            </div>
+                            <div className="max-h-56 overflow-auto rounded-md border">
+                                {results.map((c) => (
+                                    <button
+                                        key={c.code}
+                                        type="button"
+                                        onClick={() => setChosen(c)}
+                                        className={`hover:bg-muted/50 block w-full px-3 py-2 text-left text-sm ${
+                                            chosen?.code === c.code ? "bg-muted font-semibold" : ""
+                                        }`}
+                                    >
+                                        <span className="font-mono text-xs">{c.code}</span> {c.name}
+                                    </button>
+                                ))}
+                                {!results.length ? (
+                                    <p className="text-muted-foreground px-3 py-2 text-sm">Search to see matching classes.</p>
+                                ) : null}
+                            </div>
+                            <Button onClick={register} disabled={busy || !chosen}>
+                                {busy ? "Registering…" : chosen ? `Register with KRA (${chosen.code})` : "Pick a class first"}
+                            </Button>
+                        </div>
+                    )}
+                </DialogBody>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }
 
