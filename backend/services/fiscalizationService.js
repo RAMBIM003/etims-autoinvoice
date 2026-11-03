@@ -1,6 +1,7 @@
 const db = require('../db');
 const receipts = require('./receiptService');
 const sms = require('./smsService');
+const events = require('./eventService');
 
 const fail = (message, status) =>
     Object.assign(new Error(message), { status });
@@ -148,7 +149,7 @@ async function loadClassCodes(itemIds) {
     return map;
 }
 
-async function fiscalizeSale(saleId, merchantId = null) {
+async function fiscalizeSaleInner(saleId, merchantId = null) {
     const sale = (
         await db.query(
             `SELECT s.*, m.kra_pin, m.trading_name
@@ -530,6 +531,71 @@ async function fiscalizeSale(saleId, merchantId = null) {
     });
 
     return { invoice: finalInvoice, kra: body };
+}
+
+/*
+ * Each fiscalization failure gets a code on the Logs page. The code is picked
+ * from the message, so the checks above stay unchanged.
+ */
+const FAILURE_CODES = [
+    ['Sale has no items', 'FIS-01', 'The order has no items, so there is nothing to send to KRA'],
+    ['is not registered with KRA yet', 'FIS-02', 'An item in this order is not registered with KRA'],
+    ['No KRA item classification', 'FIS-03', 'An item has no KRA classification code'],
+    ['different taxpayer', 'FIS-04', 'The device PIN does not match this merchant PIN'],
+    ['credentials are not configured', 'FIS-05', 'KRA credentials are missing from the server settings'],
+    ['No invoice has been generated', 'FIS-06', 'No invoice exists for this order yet'],
+    ['Sale must have a matched payment', 'FIS-07', 'The order is not paid yet'],
+    ['No matched payment exists', 'FIS-07', 'The order is not paid yet'],
+    ['already being fiscalized', 'FIS-08', 'A fiscalization for this invoice is already running'],
+    ['Could not reach KRA eTIMS', 'FIS-09', 'KRA eTIMS could not be reached (network or timeout)'],
+    ['KRA ', 'FIS-10', 'KRA refused the invoice'],
+    ['Sale contains an invalid item quantity', 'FIS-11', 'An item quantity is zero or invalid'],
+    ['Sale not found or access denied', 'FIS-12', 'The order was not found for this merchant']
+];
+
+function classify(error) {
+    const match = FAILURE_CODES.find(([text]) => error.message.includes(text));
+    return match ? { code: match[1], plain: match[2] } : { code: 'FIS-99', plain: 'Fiscalization failed' };
+}
+
+async function fiscalizeSale(saleId, merchantId = null) {
+    try {
+        const result = await fiscalizeSaleInner(saleId, merchantId);
+
+        // An invoice that was already fiscalized is not a new event.
+        if (result.already) return result;
+
+        const ref = (await db.query('SELECT order_reference FROM sales WHERE id = $1', [saleId])).rows[0];
+
+        events.record({
+            merchantId,
+            stage: 'FISCALIZATION',
+            outcome: 'OK',
+            code: 'FIS-00',
+            reference: ref?.order_reference || null,
+            saleId,
+            invoiceId: result.invoice?.id || null,
+            message: `Invoice fiscalized. KRA receipt ${result.invoice?.kra_receipt_number || '?'}`
+        });
+
+        return result;
+    } catch (error) {
+        const { code, plain } = classify(error);
+        const ref = (await db.query('SELECT order_reference, merchant_id FROM sales WHERE id = $1', [saleId]).catch(() => ({ rows: [] }))).rows[0];
+
+        events.record({
+            merchantId: merchantId || ref?.merchant_id || null,
+            stage: 'FISCALIZATION',
+            outcome: 'FAILED',
+            code,
+            reference: ref?.order_reference || null,
+            saleId,
+            message: `${plain}: ${error.message}`,
+            detail: { status: error.status || null }
+        });
+
+        throw error;
+    }
 }
 
 // Used after a matched payment: never throws, never blocks the Daraja ACK.

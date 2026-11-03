@@ -7,13 +7,24 @@ const checkToken = (q, s, next) => {
     const got = String(q.params.token || '');
     const ok = want.length > 0 && got.length === want.length &&
         crypto.timingSafeEqual(Buffer.from(got), Buffer.from(want));
-    if (!ok) return s.status(403).json({ ResultCode: 1, ResultDesc: 'Forbidden' });
+    if (!ok) {
+        // The token itself is never logged, only the fact that it was refused.
+        events.record({
+            stage: 'CALLBACK',
+            outcome: 'REJECTED',
+            code: 'CB-01',
+            message: 'Callback refused: the token in the URL does not match the server setting',
+            detail: `path=${q.path}`
+        });
+        return s.status(403).json({ ResultCode: 1, ResultDesc: 'Forbidden' });
+    }
     next();
 };
 const db = require('../db');
 const mpesa = require('../services/mpesaService');
 const tx = require('../services/transactionService');
 const buyerLink = require('../services/buyerLinkService');
+const events = require('../services/eventService');
 const wrap = require('../middleware/wrap');
 
 const fail = (message, status) =>
@@ -33,6 +44,24 @@ r.post('/c2b/:token/confirmation', checkToken, wrap(async (q, s) => {
     const shortcode = String(body.BusinessShortCode || '').trim();
     const billRef = String(body.BillRefNumber || '').trim();
     const amount = Number(body.TransAmount);
+
+    // Logged before any check, so a payment that fails below still shows up.
+    // The phone number is masked and the name is left out.
+    events.record({
+        stage: 'CALLBACK',
+        outcome: 'OK',
+        code: 'CB-00',
+        reference: billRef || null,
+        message: `Payment confirmation received: KES ${Number.isFinite(amount) ? amount : '?'} to shortcode ${shortcode || '?'} (M-Pesa ref ${transId || '?'})`,
+        detail: {
+            TransID: transId,
+            BusinessShortCode: shortcode,
+            BillRefNumber: billRef,
+            TransAmount: body.TransAmount,
+            TransTime: body.TransTime,
+            MSISDN: body.MSISDN ? `***${String(body.MSISDN).slice(-3)}` : null
+        }
+    });
 
     if (!transId) {
         return s.status(400).json({
@@ -249,10 +278,19 @@ r.post('/c2b/:token/confirmation', checkToken, wrap(async (q, s) => {
             'C2B confirmation processing failed:',
             error.message
         );
+        events.record({
+            stage: 'CALLBACK',
+            outcome: 'FAILED',
+            code: 'CB-02',
+            reference: billRef || null,
+            message: `Payment could not be recorded: ${error.message}`,
+            detail: { TransID: transId, BusinessShortCode: shortcode, TransAmount: body.TransAmount }
+        });
 
-        return s.status(500).json({
+        // The payment was not recorded, so Safaricom gets a plain reason, not a server error.
+        return s.json({
             ResultCode: 1,
-            ResultDesc: 'Transaction processing failed'
+            ResultDesc: `Payment not recorded: ${error.message}`
         });
     }
 
@@ -264,10 +302,20 @@ r.post('/c2b/:token/confirmation', checkToken, wrap(async (q, s) => {
                 'Matched payment processing failed:',
                 error.message
             );
+            events.record({
+                stage: 'PAYMENT',
+                outcome: 'FAILED',
+                code: 'PAY-01',
+                reference: billRef || null,
+                message: `Payment saved but matching or fiscalization failed: ${error.message}`,
+                detail: { matchedPaymentId }
+            });
 
-            return s.status(500).json({
-                ResultCode: 1,
-                ResultDesc: 'Matched payment processing failed'
+            // The payment itself was saved, so it is acknowledged. The fiscalization
+            // failure is on the Logs page.
+            return s.json({
+                ResultCode: 0,
+                ResultDesc: 'Accepted'
             });
         }
     }

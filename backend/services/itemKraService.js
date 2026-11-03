@@ -75,7 +75,7 @@ async function status(merchantId) {
     ).rows;
 }
 
-async function registerItem({ merchantId, itemId, classCode, taxType, itemTypeCode }) {
+async function registerItemInner({ merchantId, itemId, classCode, taxType, itemTypeCode }) {
     if (!TAX_TYPES.includes(taxType)) {
         throw fail('Tax type must be A, B, C, D or E', 400);
     }
@@ -242,6 +242,54 @@ async function registerItem({ merchantId, itemId, classCode, taxType, itemTypeCo
             already_registered: false
         };
     });
+}
+
+/*
+ * Item registration results go to the Logs page. The code is picked from the
+ * message, so the checks above stay unchanged.
+ */
+const events = require('./eventService');
+
+const ITEM_FAILURES = [
+    ['not in KRA', 'KI-01', "The classification code is not in KRA's list"],
+    ['not in use', 'KI-02', 'The classification code is not in use by KRA'],
+    ['tied to tax type', 'KI-03', 'The classification code belongs to a different tax type'],
+    ['KRA rejected item', 'KI-04', 'KRA refused to register the item'],
+    ['has no KRA quantity code', 'KI-05', 'The unit has no KRA quantity code yet'],
+    ['Tax type must be', 'KI-06', 'The tax type is not valid'],
+    ['Item type must be', 'KI-06', 'The item type is not valid'],
+    ['classification code is required', 'KI-06', 'A classification code is needed'],
+    ['credentials are not configured', 'KI-07', 'KRA credentials are missing from the server settings'],
+    ['KRA classification list failed', 'KI-08', 'KRA classification list could not be loaded']
+];
+
+async function registerItem(input) {
+    try {
+        const out = await registerItemInner(input);
+
+        events.record({
+            merchantId: input.merchantId,
+            stage: 'KRA_ITEM',
+            outcome: 'OK',
+            code: 'KI-00',
+            message: 'Item registered with KRA'
+        });
+
+        return out;
+    } catch (error) {
+        const match = ITEM_FAILURES.find(([text]) => error.message.includes(text));
+
+        events.record({
+            merchantId: input.merchantId,
+            stage: 'KRA_ITEM',
+            outcome: 'FAILED',
+            code: match ? match[1] : 'KI-99',
+            message: `${match ? match[2] : 'Item registration failed'}: ${error.message}`,
+            detail: { itemId: input.itemId, classCode: input.classCode, taxType: input.taxType }
+        });
+
+        throw error;
+    }
 }
 
 module.exports = { classes, status, registerItem };

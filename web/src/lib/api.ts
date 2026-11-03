@@ -139,6 +139,13 @@ export const api = {
     checkKra: (body: unknown) => post("/connections/kra/check", body),
     registerMpesa: (body: unknown) => post("/connections/mpesa/register", body),
 
+    /* Logs: errors and events from the payment-to-KRA workflow */
+    logs: (query = "") => get<{ events: unknown[]; stages: string[]; outcomes: string[] }>(`/logs${query}`),
+    logProblems: () => get<{ problems: { order_reference: string; problem: string }[] }>("/logs/problems"),
+    logTables: () => get<{ tables: string[] }>("/logs/tables"),
+    logTable: (name: string, query = "") =>
+        get<{ table: string; columns: string[]; rows: Record<string, unknown>[] }>(`/logs/tables/${name}${query}`),
+
     /* Buyer surfaces */
     buyerProfile: () => get<Record<string, unknown>>("/buyer-app/profile"),
     buyerOrders: () => get<unknown[]>("/buyer-app/orders"),
