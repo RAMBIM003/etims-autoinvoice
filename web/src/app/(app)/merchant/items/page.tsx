@@ -195,6 +195,7 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
     const [searching, setSearching] = React.useState(false);
     const [chosen, setChosen] = React.useState<KraClass | null>(null);
     const [taxType, setTaxType] = React.useState(item.tax_type_code || "B");
+    const [itemType, setItemType] = React.useState("2");
 
     const isLitre = LITRE_UNITS.includes(String(item.unit_code || "").toUpperCase());
     const classified = Boolean(item.tax_type_code);
@@ -228,7 +229,7 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
             const out = (await api.registerKraItem(item.id, {
                 item_cls_code: chosen.code,
                 tax_type_code: tax,
-                item_type_code: "2",
+                item_type_code: itemType,
             })) as { item_code?: string };
 
             toast.success(`${item.name} registered with KRA${out.item_code ? ` as ${out.item_code}` : ""}.`);
@@ -274,6 +275,17 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
                             ) : (
                                 <p className="text-muted-foreground text-sm">Tax type {item.tax_type_code}.</p>
                             )}
+
+                            <div className="grid gap-1.5">
+                                <Label htmlFor="reg-kind">Kind</Label>
+                                <Select value={itemType} onValueChange={setItemType}>
+                                    <SelectTrigger id="reg-kind"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="2">Product</SelectItem>
+                                        <SelectItem value="3">Service</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
 
                             <div className="grid gap-1.5">
                                 <Label htmlFor="reg-search">Search KRA&apos;s class list</Label>
