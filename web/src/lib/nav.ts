@@ -5,6 +5,7 @@ import {
     LayoutDashboard,
     Link2,
     MapPin,
+    ScrollText,
     Settings,
     Receipt,
     ShoppingCart,
@@ -27,6 +28,7 @@ export const merchantNav: NavItem[] = [
     { href: "/merchant/items", label: "Items", icon: Boxes, description: "Catalogue and KRA classification" },
     { href: "/merchant/branches", label: "Branches", icon: MapPin, description: "Registered trading locations" },
     { href: "/merchant/connections", label: "Connections", icon: Link2, description: "KRA eTIMS and M-Pesa" },
+    { href: "/merchant/logs", label: "Logs", icon: ScrollText, description: "Errors and workflow events" },
 ];
 
 export const buyerNav: NavItem[] = [
