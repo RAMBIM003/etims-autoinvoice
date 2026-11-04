@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { PlusIcon, SearchIcon, ShoppingCartIcon } from "lucide-react";
+import { PlusIcon, SearchIcon, ShoppingCartIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { ListCard } from "@/components/list-card";
@@ -23,6 +23,38 @@ import { dateTime, kes } from "@/lib/format";
 import type { Item, Sale } from "@/lib/types";
 
 const STATUSES = ["All statuses", "DRAFT", "AWAITING_PAYMENT", "PAID", "COMPLETED", "CANCELLED"];
+
+/* Red trash icon: asks first, then runs onConfirm. */
+function DeleteIconButton({ name, message, onConfirm }: { name: string; message: string; onConfirm: () => Promise<void> }) {
+    const [busy, setBusy] = React.useState(false);
+
+    async function go() {
+        if (!window.confirm(message)) return;
+        setBusy(true);
+
+        try {
+            await onConfirm();
+            toast.success(`${name} cancelled.`);
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : `${name} could not be cancelled.`);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <Button
+            variant="destructive"
+            size="icon-sm"
+            aria-label={`Cancel ${name}`}
+            title="Cancel order"
+            disabled={busy}
+            onClick={go}
+        >
+            <Trash2Icon />
+        </Button>
+    );
+}
 
 export default function OrdersPage() {
     const [query, setQuery] = React.useState("");
@@ -99,6 +131,9 @@ export default function OrdersPage() {
                                 <TableHead>Amount</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="hidden md:table-cell">Raised</TableHead>
+                                <TableHead className="w-12">
+                                    <span className="sr-only">Actions</span>
+                                </TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -110,6 +145,18 @@ export default function OrdersPage() {
                                     <TableCell><StatusBadge status={sale.status} /></TableCell>
                                     <TableCell className="text-muted-foreground hidden md:table-cell">
                                         {dateTime(sale.created_at)}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        {sale.status === "AWAITING_PAYMENT" ? (
+                                            <DeleteIconButton
+                                                name={sale.order_reference}
+                                                message={`Cancel order ${sale.order_reference}? It stays in your records.`}
+                                                onConfirm={async () => {
+                                                    await api.cancelSale(sale.id);
+                                                    orders.reload();
+                                                }}
+                                            />
+                                        ) : null}
                                     </TableCell>
                                 </TableRow>
                             ))}

@@ -130,7 +130,7 @@ export const api = {
     updateItem: (id: string, body: unknown) => put(`/items/${id}`, body),
     deleteItem: (id: string) => del(`/items/${id}`),
     kraItems: () => get<unknown[]>("/kra-items"),
-    kraItemClasses: () => get<unknown[]>("/kra-items/classes"),
+    kraItemClasses: (term = "") => get<unknown[]>(`/kra-items/classes${term ? `?q=${encodeURIComponent(term)}` : ""}`),
     registerKraItem: (itemId: string, body: unknown) => post(`/kra-items/${itemId}/register`, body),
     fiscalize: (saleId: string) => post(`/kra/fiscalize/${saleId}`),
 
