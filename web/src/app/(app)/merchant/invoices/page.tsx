@@ -197,6 +197,12 @@ function InvoiceActions({
     }
 
     return (
+        <div className="flex items-center justify-end gap-2">
+        {canRetry ? (
+            <Button variant="destructive" size="sm" disabled={retrying} onClick={retry}>
+                <RotateCwIcon /> {retrying ? "Sending…" : "Retry"}
+            </Button>
+        ) : null}
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon-sm" aria-label={`Actions for ${number}`}>
@@ -215,12 +221,8 @@ function InvoiceActions({
                 <DropdownMenuItem onSelect={() => window.open(`/invoices/${id}?print=1`, "_blank", "noopener")}>
                     <PrinterIcon /> Print invoice
                 </DropdownMenuItem>
-                {canRetry ? (
-                    <DropdownMenuItem disabled={retrying} onSelect={retry}>
-                        <RotateCwIcon /> {retrying ? "Sending to KRA…" : "Retry fiscalization"}
-                    </DropdownMenuItem>
-                ) : null}
             </DropdownMenuContent>
         </DropdownMenu>
+        </div>
     );
 }
