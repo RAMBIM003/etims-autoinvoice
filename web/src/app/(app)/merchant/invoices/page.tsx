@@ -199,7 +199,7 @@ function InvoiceActions({
     return (
         <div className="flex items-center justify-end gap-2">
         {canRetry ? (
-            <Button variant="destructive" size="sm" disabled={retrying} onClick={retry}>
+            <Button size="sm" disabled={retrying} onClick={retry} className="bg-amber-500 text-white hover:bg-amber-600">
                 <RotateCwIcon /> {retrying ? "Sending…" : "Retry"}
             </Button>
         ) : null}
