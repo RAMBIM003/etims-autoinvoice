@@ -33,7 +33,6 @@ const TAX_TYPES = [
 ];
 
 /* Litre units cannot be registered with KRA yet (main blocks them until the code is confirmed). */
-const LITRE_UNITS = ["LTR", "L"];
 
 type KraRow = { id: string; item_code: string | null; mapped: boolean | null };
 type KraClass = { code: string; name: string };
@@ -241,7 +240,6 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
     const [taxType, setTaxType] = React.useState(item.tax_type_code || "B");
     const [itemType, setItemType] = React.useState("2");
 
-    const isLitre = LITRE_UNITS.includes(String(item.unit_code || "").toUpperCase());
     const classified = Boolean(item.tax_type_code);
 
     async function search() {
@@ -297,12 +295,7 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
                     <DialogTitle>Register {item.name}</DialogTitle>
                 </DialogHeader>
                 <DialogBody>
-                    {isLitre ? (
-                        <p className="text-sm">
-                            Items sold by the litre ({item.unit_code}) can&apos;t be registered with KRA yet. Their unit code
-                            still needs to be confirmed with KRA.
-                        </p>
-                    ) : (
+                    {(
                         <div className="grid gap-4">
                             {!classified ? (
                                 <div className="grid gap-1.5">
@@ -377,7 +370,7 @@ function RegisterDialog({ item, onDone }: { item: Item; onDone: () => void }) {
                 </DialogBody>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
-                    {isLitre ? null : (
+                    {(
                         <Button onClick={register} disabled={busy || !chosen}>
                             {busy ? "Registering…" : "Register"}
                         </Button>
