@@ -19,7 +19,6 @@ const PKG_UNIT = 'NT'; // Net (spec 4.5)
 // Quantity units from spec 4.6 that fit the two-character slot.
 // LTR/L (litres) is deliberately absent until KRA confirms the slot rule.
 const QTY_SLOT = { PCS: 'NO', NO: 'NO', KG: 'KG', BX: 'BX', PA: 'PA' };
-const LITRE_UNITS = ['LTR', 'L'];
 
 const CMC_HEADERS = () => ({
     tin: (process.env.KRA_PIN || '').toUpperCase(),
@@ -142,13 +141,6 @@ async function registerItemInner({ merchantId, itemId, classCode, taxType, itemT
         }
 
         const unit = String(item.unit_code || '').toUpperCase();
-
-        if (LITRE_UNITS.includes(unit)) {
-            throw fail(
-                'Litres (LTR) cannot be encoded yet: the two-character quantity slot needs KRA\'s rule first.',
-                400
-            );
-        }
 
         const qty = QTY_SLOT[unit];
 
