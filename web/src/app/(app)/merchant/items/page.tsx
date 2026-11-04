@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BoxesIcon, CheckCircle2Icon, PlusIcon, SearchIcon } from "lucide-react";
+import { BoxesIcon, CheckCircle2Icon, PlusIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { ListCard } from "@/components/list-card";
@@ -159,9 +159,21 @@ export default function ItemsPage() {
                                         </TableCell>
                                         <TableCell><StatusBadge status={item.status} /></TableCell>
                                         <TableCell className="text-right">
-                                            {row?.mapped ? null : (
-                                                <RegisterDialog item={item} onDone={reload} />
-                                            )}
+                                            <div className="flex items-center justify-end gap-2">
+                                                {row?.mapped ? null : (
+                                                    <RegisterDialog item={item} onDone={reload} />
+                                                )}
+                                                {item.status === "ACTIVE" ? (
+                                                    <DeleteIconButton
+                                                        name={item.name}
+                                                        message={`Delete ${item.name}? It is hidden from new orders but kept in your records.`}
+                                                        onConfirm={async () => {
+                                                            await api.deleteItem(item.id);
+                                                            reload();
+                                                        }}
+                                                    />
+                                                ) : null}
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 );
@@ -183,6 +195,38 @@ export default function ItemsPage() {
                 )}
             </ListCard>
         </>
+    );
+}
+
+/* Red trash icon: asks first, then runs onConfirm. */
+function DeleteIconButton({ name, message, onConfirm }: { name: string; message: string; onConfirm: () => Promise<void> }) {
+    const [busy, setBusy] = React.useState(false);
+
+    async function go() {
+        if (!window.confirm(message)) return;
+        setBusy(true);
+
+        try {
+            await onConfirm();
+            toast.success(`${name} deleted.`);
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : `${name} could not be deleted.`);
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    return (
+        <Button
+            variant="destructive"
+            size="icon-sm"
+            aria-label={`Delete ${name}`}
+            title="Delete"
+            disabled={busy}
+            onClick={go}
+        >
+            <Trash2Icon />
+        </Button>
     );
 }
 
