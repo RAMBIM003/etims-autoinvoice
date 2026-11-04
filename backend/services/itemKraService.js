@@ -18,7 +18,7 @@ const PKG_UNIT = 'NT'; // Net (spec 4.5)
 
 // Quantity units from spec 4.6 that fit the two-character slot.
 // LTR/L (litres) is deliberately absent until KRA confirms the slot rule.
-const QTY_SLOT = { PCS: 'NO', NO: 'NO', KG: 'KG', BX: 'BX', PA: 'PA' };
+const QTY_SLOT = { PCS: 'NO', NO: 'NO', KG: 'KG', BX: 'BX', PA: 'PA', LTR: 'LTR' };
 
 const CMC_HEADERS = () => ({
     tin: (process.env.KRA_PIN || '').toUpperCase(),
