@@ -155,7 +155,7 @@ async function registerItemInner({ merchantId, itemId, classCode, taxType, itemT
                      FROM item_kra_mappings m
                      JOIN items i ON i.id = m.item_id
                      WHERE i.merchant_id = $1
-                       AND m.item_code ~ '^KE[0-9][A-Z]{4}[0-9]{7}$'`,
+                       AND m.item_code ~ '^KE[0-9]NT[A-Z]{2,3}[0-9]{7}$'`,
                     [merchantId]
                 )
             ).rows[0].n
