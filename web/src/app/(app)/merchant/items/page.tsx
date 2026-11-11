@@ -165,7 +165,7 @@ export default function ItemsPage() {
                                                 {item.status === "ACTIVE" ? (
                                                     <DeleteIconButton
                                                         name={item.name}
-                                                        message={`Delete ${item.name}? It is hidden from new orders but kept in your records.`}
+                                                        message={`Remove ${item.name} from Items? It will no longer be available for new sales. Existing sales, receipts and invoices keep their history and cannot be changed. Continue?`}
                                                         onConfirm={async () => {
                                                             await api.deleteItem(item.id);
                                                             reload();
@@ -207,9 +207,9 @@ function DeleteIconButton({ name, message, onConfirm }: { name: string; message:
 
         try {
             await onConfirm();
-            toast.success(`${name} deleted.`);
+            toast.success(`${name} removed from Items. Its sales history is kept.`);
         } catch (error) {
-            toast.error(error instanceof ApiError ? error.message : `${name} could not be deleted.`);
+            toast.error(error instanceof ApiError ? error.message : `${name} could not be removed.`);
         } finally {
             setBusy(false);
         }
