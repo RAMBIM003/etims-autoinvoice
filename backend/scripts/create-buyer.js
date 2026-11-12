@@ -4,6 +4,7 @@
 // Usage (from the backend folder on the server, or C:\etims\backend locally):
 //   node scripts\create-buyer.js --name "Rodney Rambim" --email tobosorodney75@gmail.com --phone 254722596733 --mpesa-name "Rodney Rambim" --last3 733
 //   add --apply to actually write the records; without it, nothing is changed.
+//   add --release-merchant to free the phone from a merchant account in the same step.
 //
 // Optional: --pin A123456789Z (KRA PIN; leave out to store an empty PIN, as the local record does)
 //
@@ -18,6 +19,9 @@ const buyerLink = require('../services/buyerLinkService');
 
 const args = process.argv.slice(2);
 const apply = args.includes('--apply');
+// --release-merchant: if the phone is held by a merchant (not a buyer), remove it from
+// that account first. Both steps run in one transaction, so it either all happens or none.
+const releaseMerchant = args.includes('--release-merchant');
 const opt = name => {
     const i = args.indexOf('--' + name);
     return i >= 0 ? args[i + 1] : null;
@@ -63,12 +67,13 @@ function askHidden(question) {
         await db.query(
             `SELECT 'email' AS what FROM users WHERE email = $1
              UNION ALL
-             SELECT 'phone' FROM users WHERE phone_hash = $2
+             SELECT 'phone' FROM users u WHERE u.phone_hash = $2
+                AND (NOT $4::boolean OR EXISTS (SELECT 1 FROM buyers b WHERE b.user_id = u.id))
              UNION ALL
              SELECT 'phone' FROM buyer_phones WHERE phone_hash = $2
              UNION ALL
              SELECT 'pin' FROM buyers WHERE kra_pin = $3 AND $3 <> ''`,
-            [email, phoneHash, pin]
+            [email, phoneHash, pin, releaseMerchant]
         )
     ).rows;
 
@@ -97,6 +102,16 @@ function askHidden(question) {
     }
 
     await db.tx(async c => {
+        if (releaseMerchant) {
+            const freed = await c.query(
+                `UPDATE users SET phone_hash = NULL, phone_encrypted = NULL
+                 WHERE phone_hash = $1
+                   AND NOT EXISTS (SELECT 1 FROM buyers b WHERE b.user_id = users.id)`,
+                [phoneHash]
+            );
+            if (freed.rowCount) console.log('Released the number from its merchant account.');
+        }
+
         const user = (
             await c.query(
                 `INSERT INTO users (email, full_name, password_hash, phone_hash, phone_encrypted, status)
