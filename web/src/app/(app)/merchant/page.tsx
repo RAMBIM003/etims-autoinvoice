@@ -12,12 +12,13 @@ import {
     TrendingUpIcon,
 } from "lucide-react";
 
-import { PaymentsDonut } from "@/components/charts/payments-donut";
+import { HoursChart, type HourPoint } from "@/components/charts/hours-chart";
+import { ItemsDonut, type ItemPoint } from "@/components/charts/items-donut";
+import { ProgressRing } from "@/components/charts/progress-ring";
 import { SalesChart, type SalesPoint } from "@/components/charts/sales-chart";
 import { ListCard } from "@/components/list-card";
 import { PageHero } from "@/components/page-hero";
 import { ChartSkeleton, DonutSkeleton, TableSkeleton } from "@/components/skeletons";
-import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState } from "@/components/states";
 import { Button } from "@/components/ui/button";
@@ -27,7 +28,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useApi } from "@/hooks/use-api";
 import { api } from "@/lib/api";
 import { dateTime, kes, timeOnly } from "@/lib/format";
-import type { DashboardPayload, Payment, Sale } from "@/lib/types";
+import type { DashboardInsights, DashboardPayload, Sale } from "@/lib/types";
 
 /** Buckets sales into one point per day for the last `days` days, in EAT. */
 function buildSeries(sales: Sale[], days: number): SalesPoint[] {
@@ -57,35 +58,25 @@ function buildSeries(sales: Sale[], days: number): SalesPoint[] {
     return points;
 }
 
+const iconBadge = "bg-primary-soft text-primary grid size-8 shrink-0 place-items-center rounded-lg";
+
 export default function MerchantDashboardPage() {
     const [range, setRange] = React.useState("7");
 
     const dashboard = useApi<DashboardPayload>(() => api.dashboard() as Promise<DashboardPayload>);
+    const insights = useApi<DashboardInsights>(() => api.dashboardInsights() as Promise<DashboardInsights>);
     const sales = useApi<{ sales: Sale[] }>(() => api.sales() as unknown as Promise<{ sales: Sale[] }>);
-    const payments = useApi<{ payments: Payment[] }>(
-        () => api.payments() as unknown as Promise<{ payments: Payment[] }>
-    );
 
     const data = dashboard.data;
     const allSales = React.useMemo(() => sales.data?.sales ?? [], [sales.data]);
-    const allPayments = React.useMemo(() => payments.data?.payments ?? [], [payments.data]);
-
     const series = React.useMemo(() => buildSeries(allSales, Number(range)), [allSales, range]);
-
-    const countBy = (status: string) => allPayments.filter((p) => p.status === status).length;
-    const matched = countBy("MATCHED");
-    const unmatched = countBy("UNMATCHED");
-    const mismatch = countBy("AMOUNT_MISMATCH");
-    const otherPayments = Math.max(0, allPayments.length - matched - unmatched - mismatch);
 
     if (dashboard.error) {
         return (
             <>
                 <PageHero
-                    crumb="Merchant / Dashboard"
-                    title="Your"
-                    accent="dashboard"
-                    description="Live transaction view for your eTIMS AutoInvoice account."
+                    title="Dashboard"
+                    description="How your sales, orders and receipts are doing."
                     icon={LayoutDashboardIcon}
                 />
                 <ErrorState message={dashboard.error} onRetry={dashboard.reload} />
@@ -93,22 +84,28 @@ export default function MerchantDashboardPage() {
         );
     }
 
-    const todaySeries = series.map((p) => p.sales);
-    const ordersSeries = series.map((p) => p.orders);
-
     /* The page frame renders straight away; each panel fills in as its own data lands. */
     const loading = !data;
     const stats = data?.stats;
     const reveal = "animate-in fade-in duration-500";
 
+    const items: ItemPoint[] = insights.data?.items ?? [];
+    const hours: HourPoint[] = insights.data?.hours ?? [];
+
     return (
         <>
             <PageHero
-                crumb="Merchant / Dashboard"
-                title="Your"
-                accent="dashboard"
-                description="Live transaction view for your eTIMS AutoInvoice account."
+                title="Dashboard"
+                description="How your sales, orders and receipts are doing."
                 icon={LayoutDashboardIcon}
+                figure={
+                    <>
+                        <p className="text-muted-foreground text-xs">Sales today</p>
+                        <p className="tabular font-display text-xl font-extrabold">
+                            {stats ? kes(stats.today_sales) : "—"}
+                        </p>
+                    </>
+                }
                 action={
                     <Button asChild>
                         <Link href="/merchant/orders">
@@ -124,49 +121,13 @@ export default function MerchantDashboardPage() {
                 </p>
             ) : null}
 
-            <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-busy={loading}>
-                <StatCard
-                    label="Today's sales"
-                    value={stats && kes(stats.today_sales)}
-                    series={todaySeries}
-                    loading={loading}
-                    icon={TrendingUpIcon}
-                />
-                <StatCard
-                    label="Orders"
-                    value={stats && String(stats.orders)}
-                    series={ordersSeries}
-                    loading={loading}
-                    icon={ShoppingCartIcon}
-                    tone="ink"
-                />
-                <StatCard
-                    label="Matched payments"
-                    value={stats && String(stats.matched_payments)}
-                    delta={
-                        stats?.unmatched_payments
-                            ? { direction: "down", text: `${stats.unmatched_payments} unmatched` }
-                            : undefined
-                    }
-                    loading={loading}
-                    icon={CreditCardIcon}
-                />
-                <StatCard
-                    label="Fiscalized invoices"
-                    value={stats && `${stats.fiscalized_invoices} of ${stats.invoices}`}
-                    loading={loading}
-                    icon={FileTextIcon}
-                    tone="ink"
-                />
-            </div>
-
-            <div className="mb-4 grid items-start gap-3 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]">
+            <div className="mb-4 grid items-start gap-3 lg:grid-cols-[minmax(0,1.8fr)_minmax(0,1fr)]" aria-busy={loading}>
                 <Card>
                     <CardHeader>
-                        <span className="bg-primary-soft text-primary grid size-8 shrink-0 place-items-center rounded-lg">
+                        <span className={iconBadge}>
                             <TrendingUpIcon className="size-4" />
                         </span>
-                        <CardTitle>Sales overview</CardTitle>
+                        <CardTitle>Sales over time</CardTitle>
                         <div className="ml-auto">
                             <Select value={range} onValueChange={setRange}>
                                 <SelectTrigger size="sm" className="w-36" aria-label="Date range">
@@ -200,32 +161,75 @@ export default function MerchantDashboardPage() {
 
                 <Card>
                     <CardHeader>
-                        <span className="bg-primary-soft text-primary grid size-8 shrink-0 place-items-center rounded-lg">
-                            <PieChartIcon className="size-4" />
+                        <span className={iconBadge}>
+                            <FileTextIcon className="size-4" />
                         </span>
-                        <CardTitle>Payments by status</CardTitle>
+                        <CardTitle>Receipts issued</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {payments.loading ? (
+                        {!stats ? (
                             <DonutSkeleton />
-                        ) : allPayments.length ? (
+                        ) : (
                             <div className={reveal}>
-                                <PaymentsDonut
-                                    total={allPayments.length}
-                                    caption="payments"
-                                    data={[
-                                        { name: "Matched", value: matched, colour: "var(--chart-2)" },
-                                        { name: "Unmatched", value: unmatched, colour: "var(--chart-4)" },
-                                        { name: "Amount mismatch", value: mismatch, colour: "var(--chart-1)" },
-                                        { name: "Other", value: otherPayments, colour: "var(--chart-5)" },
-                                    ]}
+                                <ProgressRing
+                                    value={stats.fiscalized_invoices}
+                                    total={stats.invoices}
+                                    label="invoices accepted by KRA"
                                 />
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="mb-4 grid items-start gap-3 lg:grid-cols-2">
+                <Card>
+                    <CardHeader>
+                        <span className={iconBadge}>
+                            <PieChartIcon className="size-4" />
+                        </span>
+                        <CardTitle>Sales by item</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {insights.error ? (
+                            <ErrorState message={insights.error} onRetry={insights.reload} />
+                        ) : !insights.data ? (
+                            <DonutSkeleton />
+                        ) : items.length ? (
+                            <div className={reveal}>
+                                <ItemsDonut data={items} />
                             </div>
                         ) : (
                             <EmptyState
-                                icon={CreditCardIcon}
-                                title="No payments yet"
-                                description="Once a customer pays your paybill, the payment appears here and matches itself to an open order."
+                                icon={PieChartIcon}
+                                title="No sales in the last 30 days"
+                                description="Each item you sell shows here with its share of sales."
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <span className={iconBadge}>
+                            <ShoppingCartIcon className="size-4" />
+                        </span>
+                        <CardTitle>Busiest hours</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        {insights.error ? (
+                            <ErrorState message={insights.error} onRetry={insights.reload} />
+                        ) : !insights.data ? (
+                            <ChartSkeleton />
+                        ) : hours.length ? (
+                            <div className={reveal}>
+                                <HoursChart data={hours} />
+                            </div>
+                        ) : (
+                            <EmptyState
+                                icon={ShoppingCartIcon}
+                                title="No orders in the last 30 days"
+                                description="Orders are counted by the hour they were raised, so the busiest times show here."
                             />
                         )}
                     </CardContent>

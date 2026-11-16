@@ -142,6 +142,12 @@ export type DashboardPayload = {
     connections: { kra: KraConnection; mpesa: MpesaConnection[] };
 };
 
+/** Last 30 days: sales by item and orders by hour of day (EAT). */
+export type DashboardInsights = {
+    items: { name: string; total: number }[];
+    hours: { hour: number; orders: number; total: number }[];
+};
+
 export type BuyerOrder = {
     id: string;
     order_reference: string;

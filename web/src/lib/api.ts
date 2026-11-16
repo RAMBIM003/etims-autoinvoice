@@ -117,6 +117,7 @@ export const api = {
 
     /* Merchant surfaces */
     dashboard: () => get<Record<string, unknown>>("/dashboard"),
+    dashboardInsights: () => get<unknown>("/dashboard/insights"),
     sales: () => get<unknown[]>("/sales"),
     sale: (id: string) => get(`/sales/${id}`),
     createSale: (body: unknown) => post("/sales", body),
