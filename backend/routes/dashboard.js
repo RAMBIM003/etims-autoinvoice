@@ -217,4 +217,36 @@ r.get('/dashboard', auth, wrap(async (q, s) => {
     });
 }));
 
+/* Chart data for the merchant dashboard: sales by item and by hour of day, last 30 days. */
+r.get('/dashboard/insights', auth, wrap(async (q, s) => {
+    const merchant = await merchantForUser(q.user.sub);
+
+    const [itemsResult, hoursResult] = await Promise.all([
+        db.query(
+            `SELECT si.item_name AS name, COALESCE(sum(si.line_total), 0)::float AS total
+             FROM sale_items si
+             JOIN sales s ON s.id = si.sale_id
+             WHERE s.merchant_id = $1
+               AND s.created_at >= now() - interval '30 days'
+             GROUP BY si.item_name
+             ORDER BY total DESC
+             LIMIT 6`,
+            [merchant.id]
+        ),
+        db.query(
+            `SELECT EXTRACT(HOUR FROM s.created_at AT TIME ZONE 'Africa/Nairobi')::int AS hour,
+                    count(*)::int AS orders,
+                    COALESCE(sum(s.total_amount), 0)::float AS total
+             FROM sales s
+             WHERE s.merchant_id = $1
+               AND s.created_at >= now() - interval '30 days'
+             GROUP BY 1
+             ORDER BY 1`,
+            [merchant.id]
+        )
+    ]);
+
+    s.json({ items: itemsResult.rows, hours: hoursResult.rows });
+}));
+
 module.exports = r;
