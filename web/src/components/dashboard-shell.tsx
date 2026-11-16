@@ -5,6 +5,7 @@ import * as React from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader, type Notice } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SupportChat } from "@/components/support-chat";
 import { api } from "@/lib/api";
 import { buyerAccountNav, buyerNav, merchantAccountNav, merchantNav } from "@/lib/nav";
 import type { ConnectionsPayload } from "@/lib/types";
@@ -130,6 +131,7 @@ export function DashboardShell({
                 />
                 <div className="mx-auto w-full max-w-[1400px] flex-1 px-3 pt-4 pb-10 sm:px-6">{children}</div>
             </SidebarInset>
+            <SupportChat audience={audience} />
         </SidebarProvider>
     );
 }

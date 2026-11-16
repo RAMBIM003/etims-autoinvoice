@@ -2,10 +2,11 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-/* The container scrolls sideways so the page itself never does. */
+/* The container scrolls sideways and, when long, down inside a fixed height so the
+   header row can stay pinned while the rows move under it. */
 function Table({ className, ...props }: React.ComponentProps<"table">) {
     return (
-        <div data-slot="table-container" className="w-full overflow-x-auto">
+        <div data-slot="table-container" className="max-h-[70vh] w-full overflow-auto rounded-lg">
             <table
                 data-slot="table"
                 className={cn("w-full border-separate border-spacing-0 text-sm", className)}
@@ -16,7 +17,13 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
-    return <thead data-slot="table-header" className={cn(className)} {...props} />;
+    return (
+        <thead
+            data-slot="table-header"
+            className={cn("bg-card sticky top-0 z-10 shadow-[inset_0_-1px_0_var(--border)] [&_th]:bg-card", className)}
+            {...props}
+        />
+    );
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {

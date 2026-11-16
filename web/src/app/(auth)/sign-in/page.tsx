@@ -80,21 +80,15 @@ export default function SignInPage() {
     }
 
     return (
-        <div className="grid w-full max-w-4xl gap-6 lg:grid-cols-2 lg:items-center">
-            <section className="bg-band text-band-foreground relative hidden overflow-hidden rounded-2xl p-8 lg:block">
-                <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-y-0 right-0 w-2/5 bg-[linear-gradient(115deg,transparent_50%,var(--primary)_50%,var(--primary)_56%,transparent_56%,transparent_72%,var(--primary)_72%,var(--primary)_76%,transparent_76%)] opacity-30"
-                />
-                <h2 className="relative text-2xl font-extrabold">Payments in. Invoices out.</h2>
-                <p className="text-band-muted relative mt-2 text-sm leading-relaxed">
-                    M-Pesa to KRA eTIMS to a digital receipt, automatically.
-                </p>
-            </section>
+        <div className="mx-auto grid w-full max-w-sm gap-6">
+            <div className="flex items-center justify-center gap-2.5">
+                <span className="bg-primary text-primary-foreground grid size-9 place-items-center rounded-lg text-sm font-bold">e</span>
+                <span className="text-base font-bold">eTIMS AutoInvoice</span>
+            </div>
 
-            <Card className="w-full p-6">
-                <h1 className="text-xl font-extrabold">Sign in</h1>
-                <p className="text-muted-foreground mt-1 mb-5 text-sm">Enter your credentials to continue.</p>
+            <Card className="w-full p-6 shadow-sm">
+                <h1 className="text-lg font-semibold">Sign in to your account</h1>
+                <p className="text-muted-foreground mt-1 mb-5 text-sm">Use your email or phone number.</p>
 
                 <Tabs defaultValue="password">
                     <TabsList className="mb-4 w-full">
