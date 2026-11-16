@@ -18,17 +18,31 @@ export type NavItem = {
     label: string;
     icon: typeof LayoutDashboard;
     description: string;
+    /** Sidebar section heading. Items without one sit under the audience heading. */
+    group?: string;
 };
 
 export const merchantNav: NavItem[] = [
     { href: "/merchant", label: "Dashboard", icon: LayoutDashboard, description: "Live transaction view" },
-    { href: "/merchant/orders", label: "Orders", icon: ShoppingCart, description: "Sales awaiting payment" },
-    { href: "/merchant/payments", label: "Payments", icon: CreditCard, description: "M-Pesa payments and matching" },
-    { href: "/merchant/invoices", label: "Invoices", icon: FileText, description: "Fiscalized through the control unit" },
-    { href: "/merchant/items", label: "Items", icon: Boxes, description: "Catalogue and KRA classification" },
-    { href: "/merchant/branches", label: "Branches", icon: MapPin, description: "Registered trading locations" },
-    { href: "/merchant/connections", label: "Connections", icon: Link2, description: "KRA eTIMS and M-Pesa" },
-    { href: "/merchant/logs", label: "Logs", icon: ScrollText, description: "Errors and workflow events" },
+    { href: "/merchant/orders", label: "Orders", icon: ShoppingCart, description: "Sales awaiting payment", group: "Sales" },
+    {
+        href: "/merchant/payments",
+        label: "Payments",
+        icon: CreditCard,
+        description: "M-Pesa payments and matching",
+        group: "Sales",
+    },
+    {
+        href: "/merchant/invoices",
+        label: "Invoices",
+        icon: FileText,
+        description: "Fiscalized through the control unit",
+        group: "Sales",
+    },
+    { href: "/merchant/items", label: "Items", icon: Boxes, description: "Catalogue and KRA classification", group: "Setup" },
+    { href: "/merchant/branches", label: "Branches", icon: MapPin, description: "Registered trading locations", group: "Setup" },
+    { href: "/merchant/connections", label: "Connections", icon: Link2, description: "KRA eTIMS and M-Pesa", group: "Setup" },
+    { href: "/merchant/logs", label: "Logs", icon: ScrollText, description: "Errors and workflow events", group: "System" },
 ];
 
 export const buyerNav: NavItem[] = [

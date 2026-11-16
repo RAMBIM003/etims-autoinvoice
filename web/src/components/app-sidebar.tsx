@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ActivityIcon, LifeBuoyIcon, StoreIcon, UserRoundIcon } from "lucide-react";
+import { LifeBuoyIcon, StoreIcon, UserRoundIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Sidebar,
     SidebarContent,
@@ -22,24 +23,39 @@ import {
 import type { NavItem } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
+/** Splits nav items into sections, keeping their order. Items with no group sit under the audience heading. */
+function sectionsOf(items: NavItem[], audience: string) {
+    const sections: { label: string; items: NavItem[] }[] = [];
+
+    for (const item of items) {
+        const label = item.group ?? audience;
+        const existing = sections.find((s) => s.label === label);
+
+        if (existing) existing.items.push(item);
+        else sections.push({ label, items: [item] });
+    }
+
+    return sections;
+}
+
 export function AppSidebar({
     items,
     audience,
     accountName,
     accountStatus,
-    systemNote,
 }: {
     items: NavItem[];
     audience: "Merchant" | "Buyer";
     accountName: string;
     accountStatus: { label: string; connected: boolean };
-    systemNote: string;
+    systemNote?: string;
 }) {
     const pathname = usePathname();
     const { state, isMobile, setOpenMobile } = useSidebar();
     const collapsed = state === "collapsed";
 
     const AudienceIcon = audience === "Merchant" ? StoreIcon : UserRoundIcon;
+    const sections = sectionsOf(items, audience);
 
     return (
         <Sidebar collapsible="icon">
@@ -84,61 +100,47 @@ export function AppSidebar({
             </SidebarHeader>
 
             <SidebarContent>
-                <SidebarGroup>
-                    <SidebarGroupLabel>{audience}</SidebarGroupLabel>
-                    <SidebarMenu>
-                        {items.map((item) => {
-                            const active =
-                                pathname === item.href ||
-                                (item.href !== items[0]?.href && pathname.startsWith(`${item.href}/`));
+                {sections.map((section) => (
+                    <SidebarGroup key={section.label}>
+                        <SidebarGroupLabel>{section.label}</SidebarGroupLabel>
+                        <SidebarMenu>
+                            {section.items.map((item) => {
+                                const active =
+                                    pathname === item.href ||
+                                    (item.href !== items[0]?.href && pathname.startsWith(`${item.href}/`));
 
-                            return (
-                                <SidebarMenuItem key={item.href}>
-                                    <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
-                                        <Link
-                                            href={item.href}
-                                            onClick={() => {
-                                                if (isMobile) setOpenMobile(false);
-                                            }}
-                                        >
-                                            <item.icon />
-                                            <span>{item.label}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            );
-                        })}
-                    </SidebarMenu>
-                </SidebarGroup>
+                                return (
+                                    <SidebarMenuItem key={item.href}>
+                                        <SidebarMenuButton asChild isActive={active} tooltip={item.label}>
+                                            <Link
+                                                href={item.href}
+                                                onClick={() => {
+                                                    if (isMobile) setOpenMobile(false);
+                                                }}
+                                            >
+                                                <item.icon />
+                                                <span>{item.label}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
+                        </SidebarMenu>
+                    </SidebarGroup>
+                ))}
             </SidebarContent>
 
             <SidebarFooter>
                 <SidebarSeparator />
 
-                <div
-                    className={cn(
-                        "bg-sidebar-accent border-sidebar-border flex items-center gap-2.5 rounded-xl border p-2.5 text-white",
-                        collapsed && "md:hidden"
-                    )}
-                >
-                    <span aria-hidden className="bg-ok size-2 shrink-0 rounded-full" />
-                    <div className="min-w-0 flex-1">
-                        <p className="text-[13px] leading-tight font-bold">Control unit online</p>
-                        <p className="text-sidebar-foreground truncate text-[11px] leading-tight">{systemNote}</p>
-                    </div>
-                    <ActivityIcon className="text-primary size-4 shrink-0" />
+                {/* Support is an icon only; the label is kept for screen readers and the tooltip. */}
+                <div className={cn("flex", collapsed ? "justify-center" : "justify-end")}>
+                    <Button asChild variant="ghost" size="icon" aria-label="Contact support" title="Contact support">
+                        <a href="mailto:support@example.com">
+                            <LifeBuoyIcon />
+                        </a>
+                    </Button>
                 </div>
-
-                <SidebarMenu>
-                    <SidebarMenuItem>
-                        <SidebarMenuButton asChild variant="ghost" tooltip="Contact support">
-                            <a href="mailto:support@example.com">
-                                <LifeBuoyIcon />
-                                <span>Contact support</span>
-                            </a>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                </SidebarMenu>
             </SidebarFooter>
 
             <SidebarRail />
