@@ -7,12 +7,13 @@ import {
     BoxIcon,
     CircleCheckIcon,
     CreditCardIcon,
+    FileTextIcon,
+    LayoutDashboardIcon,
     PieChartIcon,
     ReceiptIcon,
     ShoppingCartIcon,
     TrendingUpIcon,
     TriangleAlertIcon,
-    LayoutDashboardIcon,
     type LucideIcon,
 } from "lucide-react";
 
@@ -22,16 +23,21 @@ import { SalesLine, type SalesLinePoint } from "@/components/charts/sales-line";
 import { KpiTile } from "@/components/kpi-tile";
 import { ListCard } from "@/components/list-card";
 import { PageHero } from "@/components/page-hero";
+import { RecordPanel, invoiceRecord, paymentRecord, saleRecord, type PanelRecord } from "@/components/record-panel";
 import { ChartSkeleton, DonutSkeleton, TableSkeleton } from "@/components/skeletons";
 import { StatusBadge } from "@/components/status-badge";
 import { EmptyState, ErrorState } from "@/components/states";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApi } from "@/hooks/use-api";
 import { api } from "@/lib/api";
 import { dateTime, kes, timeOnly } from "@/lib/format";
 import type { DashboardPayload, Payment, Sale } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+/** How often the lists re-read while the tab is open. */
+const LIVE_MS = 15000;
 
 /** Buckets sales into one point per day for the last `days` days, in EAT. */
 function buildSeries(sales: Sale[], days: number): { label: string; sales: number; orders: number }[] {
@@ -75,6 +81,23 @@ const RANGES = [
     { value: "7", label: "7 days" },
     { value: "30", label: "30 days" },
 ];
+
+type KpiId = "sales" | "orders" | "matched" | "unmatched" | "receipts" | "items";
+
+type Kpi = {
+    id: KpiId;
+    label: string;
+    value: React.ReactNode;
+    sub?: React.ReactNode;
+    icon: LucideIcon;
+    accent: string;
+    footer?: React.ReactNode;
+};
+
+/** A list row that is clickable, with a highlight while its record is open in the panel. */
+function rowClass(selected: boolean) {
+    return selected ? "cursor-pointer bg-accent/60" : "cursor-pointer";
+}
 
 function RangeToggle({ value, onChange }: { value: string; onChange: (value: string) => void }) {
     return (
@@ -129,11 +152,24 @@ function ChartCard({
 
 export default function MerchantDashboardPage() {
     const [range, setRange] = React.useState("7");
+    const [openKpi, setOpenKpi] = React.useState<KpiId | null>(null);
+    const [panel, setPanel] = React.useState<PanelRecord | null>(null);
+    const closePanel = React.useCallback(() => setPanel(null), []);
 
-    const dashboard = useApi<DashboardPayload>(() => api.dashboard() as Promise<DashboardPayload>);
-    const sales = useApi<{ sales: Sale[] }>(() => api.sales() as unknown as Promise<{ sales: Sale[] }>);
+    const dashboard = useApi<DashboardPayload>(
+        () => api.dashboard() as Promise<DashboardPayload>,
+        "",
+        { refreshMs: LIVE_MS }
+    );
+    const sales = useApi<{ sales: Sale[] }>(
+        () => api.sales() as unknown as Promise<{ sales: Sale[] }>,
+        "",
+        { refreshMs: LIVE_MS }
+    );
     const payments = useApi<{ payments: Payment[] }>(
-        () => api.payments() as unknown as Promise<{ payments: Payment[] }>
+        () => api.payments() as unknown as Promise<{ payments: Payment[] }>,
+        "",
+        { refreshMs: LIVE_MS }
     );
 
     const data = dashboard.data;
@@ -182,6 +218,70 @@ export default function MerchantDashboardPage() {
     const receiptsPct =
         stats && stats.invoices ? Math.min(100, Math.round((stats.fiscalized_invoices / stats.invoices) * 100)) : 0;
 
+    const kpis: Kpi[] = [
+        {
+            id: "sales",
+            label: "Today's sales",
+            value: stats ? kes(stats.today_sales) : "",
+            sub: trend,
+            icon: TrendingUpIcon,
+            accent: ACCENT.sales,
+        },
+        {
+            id: "orders",
+            label: "Orders today",
+            value: String(twoDays[1]?.orders ?? 0),
+            sub: stats ? `of ${stats.orders} total` : undefined,
+            icon: ShoppingCartIcon,
+            accent: ACCENT.orders,
+        },
+        {
+            id: "matched",
+            label: "Matched payments",
+            value: stats ? String(stats.matched_payments) : "",
+            sub: `of ${allPayments.length} payments`,
+            icon: CircleCheckIcon,
+            accent: ACCENT.good,
+        },
+        {
+            id: "unmatched",
+            label: "Unmatched, needs action",
+            value: stats ? String(stats.unmatched_payments) : "",
+            sub: kes(unmatchedTotal),
+            icon: TriangleAlertIcon,
+            accent: ACCENT.action,
+            footer: (
+                <Link href="/merchant/payments" className="text-primary inline-flex items-center gap-1 text-xs font-semibold">
+                    Review <ArrowRightIcon className="size-3" />
+                </Link>
+            ),
+        },
+        {
+            id: "receipts",
+            label: "Receipts issued",
+            value: stats ? `${stats.fiscalized_invoices} of ${stats.invoices}` : "",
+            icon: ReceiptIcon,
+            accent: ACCENT.good,
+            footer: (
+                <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full" aria-hidden>
+                    <div
+                        className="bg-ok h-full rounded-full transition-[width] duration-700"
+                        style={{ width: `${receiptsPct}%` }}
+                    />
+                </div>
+            ),
+        },
+        {
+            id: "items",
+            label: "Active items",
+            value: stats ? String(stats.items) : "",
+            icon: BoxIcon,
+            accent: ACCENT.info,
+        },
+    ];
+
+    const openTile = kpis.find((k) => k.id === openKpi);
+
     return (
         <>
             <PageHero
@@ -203,68 +303,40 @@ export default function MerchantDashboardPage() {
                 </p>
             ) : null}
 
-            {/* Row 1: six KPI tiles */}
-            <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6" aria-busy={loading}>
-                <KpiTile
-                    label="Today's sales"
-                    value={stats ? kes(stats.today_sales) : ""}
-                    sub={trend}
-                    icon={TrendingUpIcon}
-                    accent={ACCENT.sales}
-                    loading={loading}
-                />
-                <KpiTile
-                    label="Orders today"
-                    value={String(twoDays[1]?.orders ?? 0)}
-                    sub={stats ? `of ${stats.orders} total` : undefined}
-                    icon={ShoppingCartIcon}
-                    accent={ACCENT.orders}
-                    loading={loading}
-                />
-                <KpiTile
-                    label="Matched payments"
-                    value={stats ? String(stats.matched_payments) : ""}
-                    sub={`of ${allPayments.length} payments`}
-                    icon={CircleCheckIcon}
-                    accent={ACCENT.good}
-                    loading={loading}
-                />
-                <KpiTile
-                    label="Unmatched, needs action"
-                    value={stats ? String(stats.unmatched_payments) : ""}
-                    sub={kes(unmatchedTotal)}
-                    icon={TriangleAlertIcon}
-                    accent={ACCENT.action}
-                    loading={loading}
-                    footer={
-                        <Link href="/merchant/payments" className="text-primary inline-flex items-center gap-1 text-xs font-semibold">
-                            Review <ArrowRightIcon className="size-3" />
-                        </Link>
-                    }
-                />
-                <KpiTile
-                    label="Receipts issued"
-                    value={stats ? `${stats.fiscalized_invoices} of ${stats.invoices}` : ""}
-                    icon={ReceiptIcon}
-                    accent={ACCENT.good}
-                    loading={loading}
-                    footer={
-                        <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full" aria-hidden>
-                            <div
-                                className="bg-ok h-full rounded-full transition-[width] duration-700"
-                                style={{ width: `${receiptsPct}%` }}
-                            />
-                        </div>
-                    }
-                />
-                <KpiTile
-                    label="Active items"
-                    value={stats ? String(stats.items) : ""}
-                    icon={BoxIcon}
-                    accent={ACCENT.info}
-                    loading={loading}
-                />
+            {/* Row 1: six KPI tiles, three across and two down. Click one to see it larger. */}
+            <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3" aria-busy={loading}>
+                {kpis.map((k) => (
+                    <KpiTile
+                        key={k.id}
+                        label={k.label}
+                        value={k.value}
+                        sub={k.sub}
+                        icon={k.icon}
+                        accent={k.accent}
+                        footer={k.footer}
+                        loading={loading}
+                        onOpen={() => setOpenKpi(k.id)}
+                    />
+                ))}
             </div>
+
+            <Dialog open={openTile !== undefined} onOpenChange={(open) => { if (!open) setOpenKpi(null); }}>
+                <DialogContent className="max-w-sm border-0 bg-transparent p-0 shadow-none">
+                    <DialogTitle className="sr-only">{openTile?.label ?? "Figure"}</DialogTitle>
+                    {openTile ? (
+                        <KpiTile
+                            label={openTile.label}
+                            value={openTile.value}
+                            sub={openTile.sub}
+                            icon={openTile.icon}
+                            accent={openTile.accent}
+                            footer={openTile.footer}
+                            loading={loading}
+                            expanded
+                        />
+                    ) : null}
+                </DialogContent>
+            </Dialog>
 
             {/* Row 2: three charts */}
             <div className="mb-4 grid items-start gap-3 xl:grid-cols-3">
@@ -328,8 +400,8 @@ export default function MerchantDashboardPage() {
                 </ChartCard>
             </div>
 
-            {/* Row 3: recent lists, with scrolling tables */}
-            <div className="grid items-start gap-3 lg:grid-cols-2">
+            {/* Row 3: recent orders, payments and invoices. Click a row to see its details. */}
+            <div className="grid items-start gap-3 xl:grid-cols-3">
                 <ListCard
                     icon={ShoppingCartIcon}
                     title="Recent orders"
@@ -365,7 +437,11 @@ export default function MerchantDashboardPage() {
                             </TableHeader>
                             <TableBody>
                                 {data.orders.map((order) => (
-                                    <TableRow key={order.id}>
+                                    <TableRow
+                                        key={order.id}
+                                        className={rowClass(panel?.id === order.id)}
+                                        onClick={() => setPanel(saleRecord(order))}
+                                    >
                                         <TableCell className="font-mono text-xs">{order.order_reference}</TableCell>
                                         <TableCell className="@max-xl:hidden">{order.customer_name}</TableCell>
                                         <TableCell className="tabular font-bold">{kes(order.total_amount)}</TableCell>
@@ -422,7 +498,11 @@ export default function MerchantDashboardPage() {
                             </TableHeader>
                             <TableBody>
                                 {data.payments.map((payment) => (
-                                    <TableRow key={payment.id}>
+                                    <TableRow
+                                        key={payment.id}
+                                        className={rowClass(panel?.id === payment.id)}
+                                        onClick={() => setPanel(paymentRecord(payment))}
+                                    >
                                         <TableCell className="font-mono text-xs">{payment.trans_id || "—"}</TableCell>
                                         <TableCell className="text-muted-foreground font-mono text-xs @max-xl:hidden">
                                             {payment.payment_reference || "—"}
@@ -446,11 +526,80 @@ export default function MerchantDashboardPage() {
                         />
                     )}
                 </ListCard>
+
+                <ListCard
+                    icon={FileTextIcon}
+                    title="Recent invoices"
+                    description="The last eight invoices issued"
+                    tools={
+                        <Button asChild variant="ghost" size="sm">
+                            <Link href="/merchant/invoices">
+                                View all <ArrowRightIcon />
+                            </Link>
+                        </Button>
+                    }
+                >
+                    {loading ? (
+                        <TableSkeleton
+                            rows={8}
+                            delay={6}
+                            columns={[
+                                { kind: "mono" },
+                                { kind: "text", className: "@max-xl:hidden" },
+                                { kind: "amount" },
+                                { kind: "badge" },
+                            ]}
+                        />
+                    ) : data.invoices?.length ? (
+                        <Table className={reveal}>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Invoice</TableHead>
+                                    <TableHead className="@max-xl:hidden">Buyer</TableHead>
+                                    <TableHead>Total</TableHead>
+                                    <TableHead>Status</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {data.invoices.map((invoice) => (
+                                    <TableRow
+                                        key={invoice.id}
+                                        className={rowClass(panel?.id === invoice.id)}
+                                        onClick={() => setPanel(invoiceRecord(invoice))}
+                                    >
+                                        <TableCell className="font-mono text-xs">{invoice.invoice_number}</TableCell>
+                                        <TableCell className="@max-xl:hidden">{invoice.buyer_name || "Walk-in buyer"}</TableCell>
+                                        <TableCell className="tabular font-bold">{kes(invoice.total_amount)}</TableCell>
+                                        <TableCell>
+                                            <StatusBadge status={invoice.fiscalization_status} />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <EmptyState
+                            icon={FileTextIcon}
+                            title="No invoices yet"
+                            description="An invoice is created automatically when a payment is matched to an order and the control unit signs it."
+                        />
+                    )}
+                </ListCard>
             </div>
+
+            {panel ? (
+                <RecordPanel
+                    title={panel.title}
+                    description={panel.description}
+                    fields={panel.fields}
+                    href={panel.href}
+                    onClose={closePanel}
+                />
+            ) : null}
 
             {loading ? null : (
                 <p className="text-muted-foreground mt-2 text-xs">
-                    Last refreshed {dateTime(new Date().toISOString())} EAT
+                    Updates every 15 seconds · Last refreshed {dateTime(new Date().toISOString())} EAT
                 </p>
             )}
         </>

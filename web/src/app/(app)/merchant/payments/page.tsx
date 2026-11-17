@@ -5,6 +5,7 @@ import { ChevronDownIcon, CreditCardIcon, DownloadIcon, PrinterIcon, SearchIcon,
 
 import { ANY_DATE, DateRangeFilter, type DateRange, describeRange, inRange, isActive } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
+import { RecordPanel, paymentRecord, type PanelRecord } from "@/components/record-panel";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
@@ -42,9 +43,13 @@ export default function PaymentsPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
     const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
+    const [panel, setPanel] = React.useState<PanelRecord | null>(null);
+    const closePanel = React.useCallback(() => setPanel(null), []);
 
     const payments = useApi<{ payments: Payment[] }>(
-        () => api.payments() as unknown as Promise<{ payments: Payment[] }>
+        () => api.payments() as unknown as Promise<{ payments: Payment[] }>,
+        "",
+        { refreshMs: 15000 }
     );
 
     const all = payments.data?.payments ?? [];
@@ -184,7 +189,11 @@ export default function PaymentsPage() {
                         </TableHeader>
                         <TableBody>
                             {paged.rows.map((payment) => (
-                                <TableRow key={payment.id}>
+                                <TableRow
+                                    key={payment.id}
+                                    className={panel?.id === payment.id ? "cursor-pointer bg-accent/60" : "cursor-pointer"}
+                                    onClick={() => setPanel(paymentRecord(payment))}
+                                >
                                     <TableCell className="font-mono text-xs">{payment.trans_id || "—"}</TableCell>
                                     <TableCell className="hidden sm:table-cell">{payment.payer_name || "—"}</TableCell>
                                     <TableCell className="text-muted-foreground hidden font-mono text-xs lg:table-cell">
@@ -213,6 +222,16 @@ export default function PaymentsPage() {
                     />
                 )}
             </ListCard>
+
+            {panel ? (
+                <RecordPanel
+                    title={panel.title}
+                    description={panel.description}
+                    fields={panel.fields}
+                    href={panel.href}
+                    onClose={closePanel}
+                />
+            ) : null}
         </>
     );
 }

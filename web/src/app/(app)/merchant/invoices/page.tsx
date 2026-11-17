@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { ANY_DATE, DateRangeFilter, type DateRange, inRange } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
+import { RecordPanel, invoiceRecord, type PanelRecord } from "@/components/record-panel";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
@@ -30,9 +31,13 @@ export default function InvoicesPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
     const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
+    const [panel, setPanel] = React.useState<PanelRecord | null>(null);
+    const closePanel = React.useCallback(() => setPanel(null), []);
 
     const invoices = useApi<{ invoices: Invoice[] }>(
-        () => api.invoices() as unknown as Promise<{ invoices: Invoice[] }>
+        () => api.invoices() as unknown as Promise<{ invoices: Invoice[] }>,
+        "",
+        { refreshMs: 15000 }
     );
 
     const all = invoices.data?.invoices ?? [];
@@ -117,7 +122,11 @@ export default function InvoicesPage() {
                         </TableHeader>
                         <TableBody>
                             {paged.rows.map((invoice) => (
-                                <TableRow key={invoice.id}>
+                                <TableRow
+                                    key={invoice.id}
+                                    className={panel?.id === invoice.id ? "cursor-pointer bg-accent/60" : "cursor-pointer"}
+                                    onClick={() => setPanel(invoiceRecord(invoice))}
+                                >
                                     <TableCell className="font-mono text-xs">
                                         <Link
                                             href={`/invoices/${invoice.id}`}
@@ -144,7 +153,7 @@ export default function InvoicesPage() {
                                             <Badge variant="outline">Not yet</Badge>
                                         )}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                         <InvoiceActions
                                             id={invoice.id}
                                             number={invoice.invoice_number}
@@ -171,6 +180,16 @@ export default function InvoicesPage() {
                     />
                 )}
             </ListCard>
+
+            {panel ? (
+                <RecordPanel
+                    title={panel.title}
+                    description={panel.description}
+                    fields={panel.fields}
+                    href={panel.href}
+                    onClose={closePanel}
+                />
+            ) : null}
         </>
     );
 }

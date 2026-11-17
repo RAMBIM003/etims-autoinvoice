@@ -5,6 +5,7 @@ import { PlusIcon, SearchIcon, ShoppingCartIcon, Trash2Icon } from "lucide-react
 import { toast } from "sonner";
 
 import { ListCard } from "@/components/list-card";
+import { RecordPanel, saleRecord, type PanelRecord } from "@/components/record-panel";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
@@ -59,8 +60,14 @@ function DeleteIconButton({ name, message, onConfirm }: { name: string; message:
 export default function OrdersPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
+    const [panel, setPanel] = React.useState<PanelRecord | null>(null);
+    const closePanel = React.useCallback(() => setPanel(null), []);
 
-    const orders = useApi<{ sales: Sale[] }>(() => api.sales() as unknown as Promise<{ sales: Sale[] }>);
+    const orders = useApi<{ sales: Sale[] }>(
+        () => api.sales() as unknown as Promise<{ sales: Sale[] }>,
+        "",
+        { refreshMs: 15000 }
+    );
     const items = useApi<{ items: Item[] }>(() => api.items() as unknown as Promise<{ items: Item[] }>);
 
     const all = orders.data?.sales ?? [];
@@ -138,7 +145,11 @@ export default function OrdersPage() {
                         </TableHeader>
                         <TableBody>
                             {paged.rows.map((sale) => (
-                                <TableRow key={sale.id}>
+                                <TableRow
+                                    key={sale.id}
+                                    className={panel?.id === sale.id ? "cursor-pointer bg-accent/60" : "cursor-pointer"}
+                                    onClick={() => setPanel(saleRecord(sale))}
+                                >
                                     <TableCell className="font-mono text-xs">{sale.order_reference}</TableCell>
                                     <TableCell className="hidden sm:table-cell">{sale.customer_name}</TableCell>
                                     <TableCell className="tabular font-bold">{kes(sale.total_amount)}</TableCell>
@@ -146,7 +157,7 @@ export default function OrdersPage() {
                                     <TableCell className="text-muted-foreground hidden md:table-cell">
                                         {dateTime(sale.created_at)}
                                     </TableCell>
-                                    <TableCell className="text-right">
+                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                                         {sale.status === "AWAITING_PAYMENT" ? (
                                             <DeleteIconButton
                                                 name={sale.order_reference}
@@ -176,6 +187,16 @@ export default function OrdersPage() {
                     />
                 )}
             </ListCard>
+
+            {panel ? (
+                <RecordPanel
+                    title={panel.title}
+                    description={panel.description}
+                    fields={panel.fields}
+                    href={panel.href}
+                    onClose={closePanel}
+                />
+            ) : null}
         </>
     );
 }
