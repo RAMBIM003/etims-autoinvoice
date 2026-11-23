@@ -29,6 +29,7 @@ export function useApi<T>(loader: () => Promise<T>, key = "", options: { refresh
 
     const loaderRef = React.useRef(loader);
     const quietRef = React.useRef(false);
+    const busyRef = React.useRef(false);
 
     React.useEffect(() => {
         loaderRef.current = loader;
@@ -39,6 +40,9 @@ export function useApi<T>(loader: () => Promise<T>, key = "", options: { refresh
 
         const id = window.setInterval(() => {
             if (document.visibilityState !== "visible") return;
+
+            /* A slow request is still running: wait for it instead of cancelling it and starting another. */
+            if (busyRef.current) return;
 
             quietRef.current = true;
             setTick((t) => t + 1);
@@ -52,6 +56,7 @@ export function useApi<T>(loader: () => Promise<T>, key = "", options: { refresh
         const quiet = quietRef.current;
 
         quietRef.current = false;
+        busyRef.current = true;
 
         loaderRef
             .current()
@@ -65,6 +70,9 @@ export function useApi<T>(loader: () => Promise<T>, key = "", options: { refresh
                 setState((s) =>
                     quiet && s.data ? s : { data: null, error: message(error), loading: false, key }
                 );
+            })
+            .finally(() => {
+                busyRef.current = false;
             });
 
         return () => {
