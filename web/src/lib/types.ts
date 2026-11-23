@@ -50,6 +50,8 @@ export type Invoice = {
     kra_internal_data?: string | null;
     receipt_signature?: string | null;
     qr_code?: string | null;
+    /** The M-Pesa transaction ID of the payment this invoice was raised from, when the list returns it. */
+    payment_trans_id?: string | null;
 };
 
 export type InvoiceLine = {

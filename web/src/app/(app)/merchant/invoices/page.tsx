@@ -2,12 +2,24 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { EyeIcon, FileTextIcon, MoreHorizontalIcon, PrinterIcon, RotateCwIcon, SearchIcon } from "lucide-react";
+import {
+    ChevronDownIcon,
+    DownloadIcon,
+    EyeIcon,
+    FileTextIcon,
+    MoreHorizontalIcon,
+    PrinterIcon,
+    RotateCwIcon,
+    SearchIcon,
+    SheetIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
-import { ANY_DATE, DateRangeFilter, type DateRange, inRange } from "@/components/date-range-filter";
+import { ANY_DATE, DateRangeFilter, type DateRange, describeRange, inRange, isActive } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
+import { riseStyle, useFreshRows } from "@/components/live-rows";
 import { RecordPanel, invoiceRecord, type PanelRecord } from "@/components/record-panel";
+import { ExpandToggle, ExpandedRow, InvoiceDetails } from "@/components/row-detail";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
@@ -22,16 +34,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, api } from "@/lib/api";
+import { type ExportColumn, csvDate, downloadCsv, printReport, today } from "@/lib/export";
 import { dateTime, kes, statusLabel } from "@/lib/format";
 import type { Invoice } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const STATUSES = ["All statuses", "FISCALIZED", "PENDING", "FAILED"];
+
+/* The left edge of a row shows what needs attention: amber while waiting, red when it failed. */
+const TONE: Record<string, string> = {
+    PENDING: "[&>td:first-child]:shadow-[inset_3px_0_0_var(--warn)]",
+    FAILED: "[&>td:first-child]:shadow-[inset_3px_0_0_var(--primary)]",
+};
+
+const EXPORT_COLUMNS: ExportColumn<Invoice>[] = [
+    { header: "Invoice", value: (i) => i.invoice_number, mono: true },
+    { header: "Buyer", value: (i) => i.buyer_name || "Walk-in buyer", csv: (i) => i.buyer_name ?? "" },
+    { header: "Buyer PIN", value: (i) => i.buyer_pin || "—", csv: (i) => i.buyer_pin ?? "", mono: true },
+    { header: "Payment reference", value: (i) => i.payment_trans_id || "—", csv: (i) => i.payment_trans_id ?? "", mono: true },
+    { header: "Status", value: (i) => statusLabel(i.fiscalization_status) },
+    {
+        header: "CU number",
+        value: (i) => i.kra_invoice_number || i.kra_receipt_number || "—",
+        csv: (i) => i.kra_invoice_number || i.kra_receipt_number || "",
+        mono: true,
+    },
+    { header: "Issued", value: (i) => dateTime(i.created_at), csv: (i) => csvDate(i.created_at) },
+    { header: "Tax", value: (i) => kes(i.tax_amount), csv: (i) => Number(i.tax_amount ?? 0), align: "right" },
+    { header: "Total", value: (i) => kes(i.total_amount), csv: (i) => Number(i.total_amount), align: "right" },
+];
+
+const sum = (rows: Invoice[]) => rows.reduce((total, i) => total + Number(i.total_amount || 0), 0);
 
 export default function InvoicesPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
     const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
     const [panel, setPanel] = React.useState<PanelRecord | null>(null);
+    const [expanded, setExpanded] = React.useState<string | null>(null);
     const closePanel = React.useCallback(() => setPanel(null), []);
 
     const invoices = useApi<{ invoices: Invoice[] }>(
@@ -41,23 +81,53 @@ export default function InvoicesPage() {
     );
 
     const all = invoices.data?.invoices ?? [];
+    const fresh = useFreshRows(all, (i) => i.id, (i) => i.fiscalization_status);
 
     const visible = all.filter((invoice) => {
         const matchesStatus = status === STATUSES[0] || invoice.fiscalization_status === status;
-        const haystack = `${invoice.invoice_number} ${invoice.buyer_name ?? ""} ${invoice.kra_invoice_number ?? ""}`.toLowerCase();
+        const haystack = [
+            invoice.invoice_number,
+            invoice.buyer_name,
+            invoice.buyer_pin,
+            invoice.kra_invoice_number,
+            invoice.cu_serial_number,
+            invoice.payment_trans_id,
+        ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
 
         return matchesStatus && inRange(invoice.created_at, period) && haystack.includes(query.toLowerCase().trim());
     });
 
     const paged = usePagination(visible, `${query}|${status}|${period.from}|${period.to}`);
 
+    /* "invoices-2026-10-01-to-2026-10-29" when a period is set, else today's date. */
+    const exportName = `invoices-${isActive(period) ? `${period.from || "start"}-to-${period.to || today()}` : today()}`;
+
+    function exportPrint() {
+        const facts: [string, string][] = [
+            ["Period", describeRange(period)],
+            ["Status", status],
+            ...(query.trim() ? [["Search", `"${query.trim()}"`] as [string, string]] : []),
+            ["Invoices", String(visible.length)],
+            ["Total invoiced", kes(sum(visible))],
+        ];
+
+        printReport(visible, EXPORT_COLUMNS, {
+            title: "Fiscal invoices",
+            facts,
+            totals: EXPORT_COLUMNS.map((c, i) => (i === 0 ? "Total" : i === EXPORT_COLUMNS.length - 1 ? kes(sum(visible)) : "")),
+            fileName: exportName,
+        });
+    }
+
     return (
         <>
             <PageHero
-                crumb="Merchant / Invoices"
                 title="Fiscal"
                 accent="invoices"
-                description="Invoices signed by the OSCU control unit and filed against your KRA PIN."
+                description="Every invoice sent to KRA, and whether it was accepted."
                 icon={FileTextIcon}
             />
 
@@ -67,7 +137,7 @@ export default function InvoicesPage() {
                 icon={FileTextIcon}
                 title="Invoices"
                 count={visible.length}
-                description="Newest first"
+                description="Newest first. Updates every 15 seconds."
                 tools={
                     <>
                         <div className="relative">
@@ -75,9 +145,9 @@ export default function InvoicesPage() {
                             <Input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
-                                placeholder="Search invoice or CU number"
+                                placeholder="Search invoice, buyer or CU number"
                                 aria-label="Search invoices"
-                                className="h-9 pl-9 sm:w-60"
+                                className="h-9 pl-9 sm:w-64"
                             />
                         </div>
                         <Select value={status} onValueChange={setStatus}>
@@ -97,6 +167,35 @@ export default function InvoicesPage() {
                             onChange={setPeriod}
                             hint="Invoices are filtered by the day they were issued, in Nairobi time."
                         />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9" disabled={!visible.length}>
+                                    <DownloadIcon /> Export <ChevronDownIcon className="text-muted-foreground" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-60">
+                                <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+                                    {visible.length === all.length
+                                        ? `All ${visible.length} invoices`
+                                        : `${visible.length} invoices matching your filters`}
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={exportPrint}>
+                                    <PrinterIcon />
+                                    <span>
+                                        <span className="block">Print or save as PDF</span>
+                                        <span className="text-muted-foreground block text-xs">A4 report with totals</span>
+                                    </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => downloadCsv(visible, EXPORT_COLUMNS, exportName)}>
+                                    <SheetIcon />
+                                    <span>
+                                        <span className="block">Download CSV</span>
+                                        <span className="text-muted-foreground block text-xs">Opens in Excel or Sheets</span>
+                                    </span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </>
                 }
                 footer={<TablePagination pagination={paged} noun="invoices" unfiltered={all.length} />}
@@ -107,10 +206,12 @@ export default function InvoicesPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-10">
+                                    <span className="sr-only">Details</span>
+                                </TableHead>
                                 <TableHead>Invoice</TableHead>
                                 <TableHead className="hidden sm:table-cell">Buyer</TableHead>
-                                <TableHead className="hidden lg:table-cell">Buyer PIN</TableHead>
-                                <TableHead>Tax</TableHead>
+                                <TableHead className="hidden lg:table-cell">Payment reference</TableHead>
                                 <TableHead>Total</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="hidden md:table-cell">CU number</TableHead>
@@ -121,48 +222,69 @@ export default function InvoicesPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paged.rows.map((invoice) => (
-                                <TableRow
-                                    key={invoice.id}
-                                    className={panel?.id === invoice.id ? "cursor-pointer bg-accent/60" : "cursor-pointer"}
-                                    onClick={() => setPanel(invoiceRecord(invoice))}
-                                >
-                                    <TableCell className="font-mono text-xs">
-                                        <Link
-                                            href={`/invoices/${invoice.id}`}
-                                            className="text-primary font-semibold underline-offset-4 hover:underline focus-visible:underline"
-                                            title="Open invoice"
-                                        >
-                                            {invoice.invoice_number}
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell className="hidden sm:table-cell">
-                                        {invoice.buyer_name || "Walk-in buyer"}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground hidden font-mono text-xs lg:table-cell">
-                                        {invoice.buyer_pin || "—"}
-                                    </TableCell>
-                                    <TableCell className="tabular">{kes(invoice.tax_amount)}</TableCell>
-                                    <TableCell className="tabular font-bold">{kes(invoice.total_amount)}</TableCell>
-                                    <TableCell><StatusBadge status={invoice.fiscalization_status} /></TableCell>
-                                    <TableCell className="text-muted-foreground hidden font-mono text-xs md:table-cell">
-                                        {invoice.kra_invoice_number || invoice.kra_receipt_number || "—"}
-                                    </TableCell>
-                                    <TableCell className="text-muted-foreground hidden xl:table-cell">
-                                        {invoice.fiscalized_at ? dateTime(invoice.fiscalized_at) : (
-                                            <Badge variant="outline">Not yet</Badge>
+                            {paged.rows.map((invoice, index) => (
+                                <React.Fragment key={invoice.id}>
+                                    <TableRow
+                                        className={cn(
+                                            "row-rise cursor-pointer",
+                                            TONE[invoice.fiscalization_status],
+                                            panel?.id === invoice.id &&
+                                                "bg-accent/60 [&>td:first-child]:shadow-[inset_3px_0_0_var(--primary)]",
+                                            fresh.has(invoice.id) && "row-fresh"
                                         )}
-                                    </TableCell>
-                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                        <InvoiceActions
-                                            id={invoice.id}
-                                            number={invoice.invoice_number}
-                                            saleId={invoice.sale_id}
-                                            status={invoice.fiscalization_status}
-                                            onChanged={invoices.reload}
-                                        />
-                                    </TableCell>
-                                </TableRow>
+                                        style={riseStyle(index)}
+                                        onClick={() => setPanel(invoiceRecord(invoice))}
+                                    >
+                                        <TableCell className="w-10 pr-0">
+                                            <ExpandToggle
+                                                open={expanded === invoice.id}
+                                                onToggle={() => setExpanded((cur) => (cur === invoice.id ? null : invoice.id))}
+                                                label={invoice.invoice_number}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">
+                                            <Link
+                                                href={`/invoices/${invoice.id}`}
+                                                className="text-primary font-semibold underline-offset-4 hover:underline focus-visible:underline"
+                                                title="Open invoice"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {invoice.invoice_number}
+                                            </Link>
+                                        </TableCell>
+                                        <TableCell className="hidden sm:table-cell">
+                                            {invoice.buyer_name || "Walk-in buyer"}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground hidden font-mono text-xs lg:table-cell">
+                                            {invoice.payment_trans_id || "—"}
+                                        </TableCell>
+                                        <TableCell className="tabular font-bold">{kes(invoice.total_amount)}</TableCell>
+                                        <TableCell><StatusBadge status={invoice.fiscalization_status} /></TableCell>
+                                        <TableCell className="text-muted-foreground hidden font-mono text-xs md:table-cell">
+                                            {invoice.kra_invoice_number || invoice.kra_receipt_number || "—"}
+                                        </TableCell>
+                                        <TableCell className="text-muted-foreground hidden xl:table-cell">
+                                            {invoice.fiscalized_at ? dateTime(invoice.fiscalized_at) : (
+                                                <Badge variant="outline">Not yet</Badge>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                            <InvoiceActions
+                                                id={invoice.id}
+                                                number={invoice.invoice_number}
+                                                saleId={invoice.sale_id}
+                                                status={invoice.fiscalization_status}
+                                                onChanged={invoices.reload}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+
+                                    {expanded === invoice.id ? (
+                                        <ExpandedRow colSpan={9}>
+                                            <InvoiceDetails invoice={invoice} />
+                                        </ExpandedRow>
+                                    ) : null}
+                                </React.Fragment>
                             ))}
                         </TableBody>
                     </Table>

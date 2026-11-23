@@ -7,7 +7,6 @@ import {
     BoxIcon,
     CircleCheckIcon,
     CreditCardIcon,
-    FileTextIcon,
     LayoutDashboardIcon,
     PieChartIcon,
     ReceiptIcon,
@@ -21,18 +20,16 @@ import { OrdersBars, type OrdersBarPoint } from "@/components/charts/orders-bars
 import { PaymentsDonut } from "@/components/charts/payments-donut";
 import { SalesLine, type SalesLinePoint } from "@/components/charts/sales-line";
 import { KpiTile } from "@/components/kpi-tile";
-import { ListCard } from "@/components/list-card";
 import { PageHero } from "@/components/page-hero";
-import { RecordPanel, invoiceRecord, paymentRecord, saleRecord, type PanelRecord } from "@/components/record-panel";
-import { ChartSkeleton, DonutSkeleton, TableSkeleton } from "@/components/skeletons";
-import { StatusBadge } from "@/components/status-badge";
+import { RecentActivity } from "@/components/recent-activity";
+import { RecordPanel, type PanelRecord } from "@/components/record-panel";
+import { ChartSkeleton, DonutSkeleton } from "@/components/skeletons";
 import { EmptyState, ErrorState } from "@/components/states";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApi } from "@/hooks/use-api";
 import { api } from "@/lib/api";
-import { dateTime, kes, timeOnly } from "@/lib/format";
+import { dateTime, kes } from "@/lib/format";
 import type { DashboardPayload, Payment, Sale } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -93,11 +90,6 @@ type Kpi = {
     accent: string;
     footer?: React.ReactNode;
 };
-
-/** A list row that is clickable, with a highlight while its record is open in the panel. */
-function rowClass(selected: boolean) {
-    return selected ? "cursor-pointer bg-accent/60" : "cursor-pointer";
-}
 
 function RangeToggle({ value, onChange }: { value: string; onChange: (value: string) => void }) {
     return (
@@ -400,192 +392,8 @@ export default function MerchantDashboardPage() {
                 </ChartCard>
             </div>
 
-            {/* Row 3: recent orders, payments and invoices. Click a row to see its details. */}
-            <div className="grid items-start gap-3 xl:grid-cols-3">
-                <ListCard
-                    icon={ShoppingCartIcon}
-                    title="Recent orders"
-                    description="The last eight orders raised"
-                    tools={
-                        <Button asChild variant="ghost" size="sm">
-                            <Link href="/merchant/orders">
-                                View all <ArrowRightIcon />
-                            </Link>
-                        </Button>
-                    }
-                >
-                    {loading ? (
-                        <TableSkeleton
-                            rows={8}
-                            delay={4}
-                            columns={[
-                                { kind: "mono" },
-                                { kind: "text", className: "@max-xl:hidden" },
-                                { kind: "amount" },
-                                { kind: "badge" },
-                            ]}
-                        />
-                    ) : data.orders.length ? (
-                        <Table className={reveal}>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Order</TableHead>
-                                    <TableHead className="@max-xl:hidden">Customer</TableHead>
-                                    <TableHead>Amount</TableHead>
-                                    <TableHead>Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {data.orders.map((order) => (
-                                    <TableRow
-                                        key={order.id}
-                                        className={rowClass(panel?.id === order.id)}
-                                        onClick={() => setPanel(saleRecord(order))}
-                                    >
-                                        <TableCell className="font-mono text-xs">{order.order_reference}</TableCell>
-                                        <TableCell className="@max-xl:hidden">{order.customer_name}</TableCell>
-                                        <TableCell className="tabular font-bold">{kes(order.total_amount)}</TableCell>
-                                        <TableCell>
-                                            <StatusBadge status={order.status} />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <EmptyState
-                            icon={ShoppingCartIcon}
-                            title="No orders yet"
-                            description="Raise an order from the Orders page, or let a buyer place one against your catalogue."
-                        />
-                    )}
-                </ListCard>
-
-                <ListCard
-                    icon={CreditCardIcon}
-                    title="Recent payments"
-                    description="The last eight M-Pesa payments"
-                    tools={
-                        <Button asChild variant="ghost" size="sm">
-                            <Link href="/merchant/payments">
-                                View all <ArrowRightIcon />
-                            </Link>
-                        </Button>
-                    }
-                >
-                    {loading ? (
-                        <TableSkeleton
-                            rows={8}
-                            delay={5}
-                            columns={[
-                                { kind: "mono" },
-                                { kind: "mono", className: "@max-xl:hidden" },
-                                { kind: "amount" },
-                                { kind: "badge" },
-                                { kind: "time", className: "@max-md:hidden" },
-                            ]}
-                        />
-                    ) : data.payments.length ? (
-                        <Table className={reveal}>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>M-Pesa ref</TableHead>
-                                    <TableHead className="@max-xl:hidden">Reference</TableHead>
-                                    <TableHead>Amount</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="@max-md:hidden">Time</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {data.payments.map((payment) => (
-                                    <TableRow
-                                        key={payment.id}
-                                        className={rowClass(panel?.id === payment.id)}
-                                        onClick={() => setPanel(paymentRecord(payment))}
-                                    >
-                                        <TableCell className="font-mono text-xs">{payment.trans_id || "—"}</TableCell>
-                                        <TableCell className="text-muted-foreground font-mono text-xs @max-xl:hidden">
-                                            {payment.payment_reference || "—"}
-                                        </TableCell>
-                                        <TableCell className="tabular font-bold">{kes(payment.amount)}</TableCell>
-                                        <TableCell>
-                                            <StatusBadge status={payment.status} />
-                                        </TableCell>
-                                        <TableCell className="text-muted-foreground @max-md:hidden">
-                                            {timeOnly(payment.paid_at)}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <EmptyState
-                            icon={CreditCardIcon}
-                            title="No payments yet"
-                            description="Register your M-Pesa callbacks under Connections so paybill payments reach this list."
-                        />
-                    )}
-                </ListCard>
-
-                <ListCard
-                    icon={FileTextIcon}
-                    title="Recent invoices"
-                    description="The last eight invoices issued"
-                    tools={
-                        <Button asChild variant="ghost" size="sm">
-                            <Link href="/merchant/invoices">
-                                View all <ArrowRightIcon />
-                            </Link>
-                        </Button>
-                    }
-                >
-                    {loading ? (
-                        <TableSkeleton
-                            rows={8}
-                            delay={6}
-                            columns={[
-                                { kind: "mono" },
-                                { kind: "text", className: "@max-xl:hidden" },
-                                { kind: "amount" },
-                                { kind: "badge" },
-                            ]}
-                        />
-                    ) : data.invoices?.length ? (
-                        <Table className={reveal}>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Invoice</TableHead>
-                                    <TableHead className="@max-xl:hidden">Buyer</TableHead>
-                                    <TableHead>Total</TableHead>
-                                    <TableHead>Status</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {data.invoices.map((invoice) => (
-                                    <TableRow
-                                        key={invoice.id}
-                                        className={rowClass(panel?.id === invoice.id)}
-                                        onClick={() => setPanel(invoiceRecord(invoice))}
-                                    >
-                                        <TableCell className="font-mono text-xs">{invoice.invoice_number}</TableCell>
-                                        <TableCell className="@max-xl:hidden">{invoice.buyer_name || "Walk-in buyer"}</TableCell>
-                                        <TableCell className="tabular font-bold">{kes(invoice.total_amount)}</TableCell>
-                                        <TableCell>
-                                            <StatusBadge status={invoice.fiscalization_status} />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    ) : (
-                        <EmptyState
-                            icon={FileTextIcon}
-                            title="No invoices yet"
-                            description="An invoice is created automatically when a payment is matched to an order and the control unit signs it."
-                        />
-                    )}
-                </ListCard>
-            </div>
+            {/* Row 3: one card for the latest orders, payments and invoices, with arrows to switch. */}
+            <RecentActivity data={data} selectedId={panel?.id} onSelect={setPanel} />
 
             {panel ? (
                 <RecordPanel

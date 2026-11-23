@@ -118,10 +118,10 @@ const WIDTHS: Record<SkeletonColumn["kind"], number[]> = {
 export function TableSkeleton({ columns, rows = 6, delay = 0 }: { columns: SkeletonColumn[]; rows?: number; delay?: number }) {
     return (
         <div className="skeleton-rise overflow-hidden rounded-lg" aria-hidden style={rise(delay)}>
-            <div className="bg-foreground/90 dark:bg-secondary flex h-9 items-center gap-4 rounded-lg px-3">
+            <div className="bg-muted flex h-9 items-center gap-4 rounded-lg px-3">
                 {columns.map((col, c) => (
                     <div key={c} className={cn("flex-1", col.className)}>
-                        <div className="bg-background/25 h-2 w-12 rounded-full" />
+                        <div className="bg-foreground/15 h-2 w-12 rounded-full" />
                     </div>
                 ))}
             </div>

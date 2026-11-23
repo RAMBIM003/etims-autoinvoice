@@ -1,11 +1,22 @@
 "use client";
 
 import * as React from "react";
-import { PlusIcon, SearchIcon, ShoppingCartIcon, Trash2Icon } from "lucide-react";
+import {
+    ChevronDownIcon,
+    DownloadIcon,
+    PlusIcon,
+    PrinterIcon,
+    SearchIcon,
+    SheetIcon,
+    ShoppingCartIcon,
+    Trash2Icon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { ListCard } from "@/components/list-card";
+import { riseStyle, useFreshRows } from "@/components/live-rows";
 import { RecordPanel, saleRecord, type PanelRecord } from "@/components/record-panel";
+import { ExpandToggle, ExpandedRow, OrderDetails } from "@/components/row-detail";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
@@ -14,16 +25,37 @@ import { Button } from "@/components/ui/button";
 import {
     Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useApi } from "@/hooks/use-api";
 import { ApiError, api } from "@/lib/api";
-import { dateTime, kes } from "@/lib/format";
+import { type ExportColumn, csvDate, downloadCsv, printReport, today } from "@/lib/export";
+import { dateTime, kes, statusLabel } from "@/lib/format";
 import type { Item, Sale } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const STATUSES = ["All statuses", "DRAFT", "AWAITING_PAYMENT", "PAID", "COMPLETED", "CANCELLED"];
+
+/* The left edge of a row is amber while an order is waiting to be paid. */
+const TONE: Record<string, string> = {
+    AWAITING_PAYMENT: "[&>td:first-child]:shadow-[inset_3px_0_0_var(--warn)]",
+};
+
+const EXPORT_COLUMNS: ExportColumn<Sale>[] = [
+    { header: "Order", value: (s) => s.order_reference, mono: true },
+    { header: "Customer", value: (s) => s.customer_name || "Walk-in customer", csv: (s) => s.customer_name ?? "" },
+    { header: "Status", value: (s) => statusLabel(s.status) },
+    { header: "Raised", value: (s) => dateTime(s.created_at), csv: (s) => csvDate(s.created_at) },
+    { header: "Tax", value: (s) => kes(s.tax_amount), csv: (s) => Number(s.tax_amount ?? 0), align: "right" },
+    { header: "Total", value: (s) => kes(s.total_amount), csv: (s) => Number(s.total_amount), align: "right" },
+];
+
+const sum = (rows: Sale[]) => rows.reduce((total, s) => total + Number(s.total_amount || 0), 0);
 
 /* Red trash icon: asks first, then runs onConfirm. */
 function DeleteIconButton({ name, message, onConfirm }: { name: string; message: string; onConfirm: () => Promise<void> }) {
@@ -61,6 +93,7 @@ export default function OrdersPage() {
     const [query, setQuery] = React.useState("");
     const [status, setStatus] = React.useState(STATUSES[0]);
     const [panel, setPanel] = React.useState<PanelRecord | null>(null);
+    const [expanded, setExpanded] = React.useState<string | null>(null);
     const closePanel = React.useCallback(() => setPanel(null), []);
 
     const orders = useApi<{ sales: Sale[] }>(
@@ -71,6 +104,7 @@ export default function OrdersPage() {
     const items = useApi<{ items: Item[] }>(() => api.items() as unknown as Promise<{ items: Item[] }>);
 
     const all = orders.data?.sales ?? [];
+    const fresh = useFreshRows(all, (s) => s.id, (s) => s.status);
 
     const visible = all.filter((sale) => {
         const matchesStatus = status === STATUSES[0] || sale.status === status;
@@ -81,13 +115,30 @@ export default function OrdersPage() {
 
     const paged = usePagination(visible, `${query}|${status}`);
 
+    const exportName = `orders-${today()}`;
+
+    function exportPrint() {
+        const facts: [string, string][] = [
+            ["Status", status === STATUSES[0] ? status : statusLabel(status)],
+            ...(query.trim() ? [["Search", `"${query.trim()}"`] as [string, string]] : []),
+            ["Orders", String(visible.length)],
+            ["Total", kes(sum(visible))],
+        ];
+
+        printReport(visible, EXPORT_COLUMNS, {
+            title: "Orders",
+            facts,
+            totals: EXPORT_COLUMNS.map((c, i) => (i === 0 ? "Total" : i === EXPORT_COLUMNS.length - 1 ? kes(sum(visible)) : "")),
+            fileName: exportName,
+        });
+    }
+
     return (
         <>
             <PageHero
-                crumb="Merchant / Orders"
                 title="Your"
                 accent="orders"
-                description="Every sale raised against your catalogue, and where its payment stands."
+                description="Every order you have raised, and whether it has been paid."
                 icon={ShoppingCartIcon}
                 action={<NewOrderDialog items={items.data?.items ?? []} onCreated={orders.reload} />}
             />
@@ -98,7 +149,7 @@ export default function OrdersPage() {
                 icon={ShoppingCartIcon}
                 title="Orders"
                 count={visible.length}
-                description="Newest first"
+                description="Newest first. Updates every 15 seconds."
                 tools={
                     <>
                         <div className="relative">
@@ -123,6 +174,35 @@ export default function OrdersPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9" disabled={!visible.length}>
+                                    <DownloadIcon /> Export <ChevronDownIcon className="text-muted-foreground" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-60">
+                                <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+                                    {visible.length === all.length
+                                        ? `All ${visible.length} orders`
+                                        : `${visible.length} orders matching your filters`}
+                                </DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={exportPrint}>
+                                    <PrinterIcon />
+                                    <span>
+                                        <span className="block">Print or save as PDF</span>
+                                        <span className="text-muted-foreground block text-xs">A4 report with totals</span>
+                                    </span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => downloadCsv(visible, EXPORT_COLUMNS, exportName)}>
+                                    <SheetIcon />
+                                    <span>
+                                        <span className="block">Download CSV</span>
+                                        <span className="text-muted-foreground block text-xs">Opens in Excel or Sheets</span>
+                                    </span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                     </>
                 }
                 footer={<TablePagination pagination={paged} noun="orders" unfiltered={all.length} />}
@@ -133,6 +213,9 @@ export default function OrdersPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-10">
+                                    <span className="sr-only">Details</span>
+                                </TableHead>
                                 <TableHead>Order</TableHead>
                                 <TableHead className="hidden sm:table-cell">Customer</TableHead>
                                 <TableHead>Amount</TableHead>
@@ -144,32 +227,53 @@ export default function OrdersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paged.rows.map((sale) => (
-                                <TableRow
-                                    key={sale.id}
-                                    className={panel?.id === sale.id ? "cursor-pointer bg-accent/60" : "cursor-pointer"}
-                                    onClick={() => setPanel(saleRecord(sale))}
-                                >
-                                    <TableCell className="font-mono text-xs">{sale.order_reference}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{sale.customer_name}</TableCell>
-                                    <TableCell className="tabular font-bold">{kes(sale.total_amount)}</TableCell>
-                                    <TableCell><StatusBadge status={sale.status} /></TableCell>
-                                    <TableCell className="text-muted-foreground hidden md:table-cell">
-                                        {dateTime(sale.created_at)}
-                                    </TableCell>
-                                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                                        {sale.status === "AWAITING_PAYMENT" ? (
-                                            <DeleteIconButton
-                                                name={sale.order_reference}
-                                                message={`Cancel order ${sale.order_reference}? It stays in your records.`}
-                                                onConfirm={async () => {
-                                                    await api.cancelSale(sale.id);
-                                                    orders.reload();
-                                                }}
+                            {paged.rows.map((sale, index) => (
+                                <React.Fragment key={sale.id}>
+                                    <TableRow
+                                        className={cn(
+                                            "row-rise cursor-pointer",
+                                            TONE[sale.status],
+                                            panel?.id === sale.id &&
+                                                "bg-accent/60 [&>td:first-child]:shadow-[inset_3px_0_0_var(--primary)]",
+                                            fresh.has(sale.id) && "row-fresh"
+                                        )}
+                                        style={riseStyle(index)}
+                                        onClick={() => setPanel(saleRecord(sale))}
+                                    >
+                                        <TableCell className="w-10 pr-0">
+                                            <ExpandToggle
+                                                open={expanded === sale.id}
+                                                onToggle={() => setExpanded((cur) => (cur === sale.id ? null : sale.id))}
+                                                label={sale.order_reference}
                                             />
-                                        ) : null}
-                                    </TableCell>
-                                </TableRow>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">{sale.order_reference}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{sale.customer_name}</TableCell>
+                                        <TableCell className="tabular font-bold">{kes(sale.total_amount)}</TableCell>
+                                        <TableCell><StatusBadge status={sale.status} /></TableCell>
+                                        <TableCell className="text-muted-foreground hidden md:table-cell">
+                                            {dateTime(sale.created_at)}
+                                        </TableCell>
+                                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                                            {sale.status === "AWAITING_PAYMENT" ? (
+                                                <DeleteIconButton
+                                                    name={sale.order_reference}
+                                                    message={`Cancel order ${sale.order_reference}? It stays in your records.`}
+                                                    onConfirm={async () => {
+                                                        await api.cancelSale(sale.id);
+                                                        orders.reload();
+                                                    }}
+                                                />
+                                            ) : null}
+                                        </TableCell>
+                                    </TableRow>
+
+                                    {expanded === sale.id ? (
+                                        <ExpandedRow colSpan={7}>
+                                            <OrderDetails sale={sale} />
+                                        </ExpandedRow>
+                                    ) : null}
+                                </React.Fragment>
                             ))}
                         </TableBody>
                     </Table>

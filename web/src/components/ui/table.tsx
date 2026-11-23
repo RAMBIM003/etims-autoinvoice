@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
    header row can stay pinned while the rows move under it. */
 function Table({ className, ...props }: React.ComponentProps<"table">) {
     return (
-        <div data-slot="table-container" className="max-h-[70vh] w-full overflow-auto rounded-lg">
+        <div data-slot="table-container" className="thin-scroll max-h-[70vh] w-full overflow-auto rounded-lg">
             <table
                 data-slot="table"
                 className={cn("w-full border-separate border-spacing-0 text-sm", className)}

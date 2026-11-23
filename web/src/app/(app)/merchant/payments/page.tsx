@@ -5,7 +5,9 @@ import { ChevronDownIcon, CreditCardIcon, DownloadIcon, PrinterIcon, SearchIcon,
 
 import { ANY_DATE, DateRangeFilter, type DateRange, describeRange, inRange, isActive } from "@/components/date-range-filter";
 import { ListCard } from "@/components/list-card";
+import { riseStyle, useFreshRows } from "@/components/live-rows";
 import { RecordPanel, paymentRecord, type PanelRecord } from "@/components/record-panel";
+import { ExpandToggle, ExpandedRow, PaymentDetails } from "@/components/row-detail";
 import { TablePagination, usePagination } from "@/components/table-pagination";
 import { PageHero } from "@/components/page-hero";
 import { StatusBadge } from "@/components/status-badge";
@@ -22,8 +24,15 @@ import { api } from "@/lib/api";
 import { type ExportColumn, csvDate, downloadCsv, printReport, today } from "@/lib/export";
 import { dateTime, kes, statusLabel } from "@/lib/format";
 import type { ConnectionsPayload, Payment } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 const STATUSES = ["All statuses", "MATCHED", "UNMATCHED", "AMOUNT_MISMATCH"];
+
+/* The left edge of a row shows what needs attention: amber when unmatched, red when the amount is wrong. */
+const TONE: Record<string, string> = {
+    UNMATCHED: "[&>td:first-child]:shadow-[inset_3px_0_0_var(--warn)]",
+    AMOUNT_MISMATCH: "[&>td:first-child]:shadow-[inset_3px_0_0_var(--primary)]",
+};
 
 /* Everything the API knows about a payment, not just what fits on screen. */
 const EXPORT_COLUMNS: ExportColumn<Payment>[] = [
@@ -44,6 +53,7 @@ export default function PaymentsPage() {
     const [status, setStatus] = React.useState(STATUSES[0]);
     const [period, setPeriod] = React.useState<DateRange>(ANY_DATE);
     const [panel, setPanel] = React.useState<PanelRecord | null>(null);
+    const [expanded, setExpanded] = React.useState<string | null>(null);
     const closePanel = React.useCallback(() => setPanel(null), []);
 
     const payments = useApi<{ payments: Payment[] }>(
@@ -53,6 +63,7 @@ export default function PaymentsPage() {
     );
 
     const all = payments.data?.payments ?? [];
+    const fresh = useFreshRows(all, (p) => p.id, (p) => p.status);
 
     const visible = all.filter((payment) => {
         const matchesStatus = status === STATUSES[0] || payment.status === status;
@@ -97,10 +108,9 @@ export default function PaymentsPage() {
     return (
         <>
             <PageHero
-                crumb="Merchant / Payments"
                 title="M-Pesa"
                 accent="payments"
-                description="Every paybill payment received, and which order it was matched to."
+                description="Every M-Pesa payment you have received, and the order it paid for."
                 icon={CreditCardIcon}
             />
 
@@ -110,7 +120,7 @@ export default function PaymentsPage() {
                 icon={CreditCardIcon}
                 title="Payments"
                 count={visible.length}
-                description="Newest first, by time paid"
+                description="Newest first, by time paid. Updates every 15 seconds."
                 tools={
                     <>
                         <div className="relative">
@@ -179,6 +189,9 @@ export default function PaymentsPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead className="w-10">
+                                    <span className="sr-only">Details</span>
+                                </TableHead>
                                 <TableHead>M-Pesa ref</TableHead>
                                 <TableHead className="hidden sm:table-cell">Payer</TableHead>
                                 <TableHead className="hidden lg:table-cell">Order reference</TableHead>
@@ -188,23 +201,44 @@ export default function PaymentsPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {paged.rows.map((payment) => (
-                                <TableRow
-                                    key={payment.id}
-                                    className={panel?.id === payment.id ? "cursor-pointer bg-accent/60" : "cursor-pointer"}
-                                    onClick={() => setPanel(paymentRecord(payment))}
-                                >
-                                    <TableCell className="font-mono text-xs">{payment.trans_id || "—"}</TableCell>
-                                    <TableCell className="hidden sm:table-cell">{payment.payer_name || "—"}</TableCell>
-                                    <TableCell className="text-muted-foreground hidden font-mono text-xs lg:table-cell">
-                                        {payment.bill_ref_number || "—"}
-                                    </TableCell>
-                                    <TableCell className="tabular font-bold">{kes(payment.amount)}</TableCell>
-                                    <TableCell><StatusBadge status={payment.status} /></TableCell>
-                                    <TableCell className="text-muted-foreground hidden md:table-cell">
-                                        {dateTime(payment.paid_at ?? payment.created_at)}
-                                    </TableCell>
-                                </TableRow>
+                            {paged.rows.map((payment, index) => (
+                                <React.Fragment key={payment.id}>
+                                    <TableRow
+                                        className={cn(
+                                            "row-rise cursor-pointer",
+                                            TONE[payment.status],
+                                            panel?.id === payment.id &&
+                                                "bg-accent/60 [&>td:first-child]:shadow-[inset_3px_0_0_var(--primary)]",
+                                            fresh.has(payment.id) && "row-fresh"
+                                        )}
+                                        style={riseStyle(index)}
+                                        onClick={() => setPanel(paymentRecord(payment))}
+                                    >
+                                        <TableCell className="w-10 pr-0">
+                                            <ExpandToggle
+                                                open={expanded === payment.id}
+                                                onToggle={() => setExpanded((cur) => (cur === payment.id ? null : payment.id))}
+                                                label={payment.trans_id || "payment"}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs">{payment.trans_id || "—"}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{payment.payer_name || "—"}</TableCell>
+                                        <TableCell className="text-muted-foreground hidden font-mono text-xs lg:table-cell">
+                                            {payment.bill_ref_number || "—"}
+                                        </TableCell>
+                                        <TableCell className="tabular font-bold">{kes(payment.amount)}</TableCell>
+                                        <TableCell><StatusBadge status={payment.status} /></TableCell>
+                                        <TableCell className="text-muted-foreground hidden md:table-cell">
+                                            {dateTime(payment.paid_at ?? payment.created_at)}
+                                        </TableCell>
+                                    </TableRow>
+
+                                    {expanded === payment.id ? (
+                                        <ExpandedRow colSpan={7}>
+                                            <PaymentDetails payment={payment} />
+                                        </ExpandedRow>
+                                    ) : null}
+                                </React.Fragment>
                             ))}
                         </TableBody>
                     </Table>
