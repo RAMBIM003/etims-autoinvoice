@@ -49,7 +49,7 @@ export function KpiTile({
             onClick={interactive ? onOpen : undefined}
             onKeyDown={interactive ? onKeyDown : undefined}
             className={cn(
-                "bg-card/70 flex min-h-32 flex-col gap-2 rounded-xl border-2 p-4 shadow-sm backdrop-blur-md transition-shadow duration-300",
+                "bg-card/70 flex min-h-[6.5rem] flex-col justify-between gap-1.5 rounded-xl border-2 p-3 shadow-sm backdrop-blur-md transition-shadow duration-300",
                 interactive && "hover:shadow-md focus-visible:ring-ring cursor-pointer focus-visible:ring-2 focus-visible:outline-none",
                 expanded && "min-h-56 gap-4 p-6"
             )}
@@ -59,21 +59,24 @@ export function KpiTile({
             }}
         >
             <div className="flex items-center gap-2">
-                <span className="bg-muted grid size-8 shrink-0 place-items-center rounded-lg" style={{ color: accent }}>
-                    <Icon className="size-4" />
+                <span className="bg-muted grid size-7 shrink-0 place-items-center rounded-lg" style={{ color: accent }}>
+                    <Icon className="size-3.5" />
                 </span>
                 <p className={cn("text-muted-foreground font-semibold", expanded ? "text-sm" : "text-xs")}>{label}</p>
             </div>
-            <p className={cn("tabular font-display font-extrabold", expanded ? "text-4xl" : "text-2xl")}>
+            <p className={cn("tabular font-display font-extrabold", expanded ? "text-4xl" : "text-xl leading-tight")}>
                 {loading ? "—" : value}
             </p>
-            {sub ? <p className={cn("text-muted-foreground", expanded ? "text-sm" : "text-xs")}>{sub}</p> : null}
-            {footer ? (
-                /* A link inside the tile should go where it says, not open the tile. */
-                <div className="mt-auto pt-1" onClick={(event) => event.stopPropagation()}>
-                    {footer}
-                </div>
-            ) : null}
+            {/* Collapsed tiles keep the note and any link on one line, so all six stay the same height. */}
+            <div className={cn(expanded ? "flex flex-col gap-4" : "flex items-center justify-between gap-2")}>
+                {sub ? <p className={cn("text-muted-foreground", expanded ? "text-sm" : "text-xs")}>{sub}</p> : null}
+                {footer ? (
+                    /* A link inside the tile should go where it says, not open the tile. */
+                    <div className={cn(!sub && "w-full")} onClick={(event) => event.stopPropagation()}>
+                        {footer}
+                    </div>
+                ) : null}
+            </div>
         </div>
     );
 }

@@ -112,6 +112,11 @@ function RangeToggle({ value, onChange }: { value: string; onChange: (value: str
     );
 }
 
+/** A small title above each part of the dashboard. */
+function SectionHeading({ children }: { children: React.ReactNode }) {
+    return <h2 className="font-display text-muted-foreground mb-3 text-sm font-bold tracking-wide uppercase">{children}</h2>;
+}
+
 function ChartCard({
     icon: Icon,
     title,
@@ -296,7 +301,8 @@ export default function MerchantDashboardPage() {
             ) : null}
 
             {/* Row 1: six KPI tiles, three across and two down. Click one to see it larger. */}
-            <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3" aria-busy={loading}>
+            <SectionHeading>Key figures</SectionHeading>
+            <div className="mb-10 grid grid-cols-2 gap-3 lg:grid-cols-3" aria-busy={loading}>
                 {kpis.map((k) => (
                     <KpiTile
                         key={k.id}
@@ -331,7 +337,8 @@ export default function MerchantDashboardPage() {
             </Dialog>
 
             {/* Row 2: three charts */}
-            <div className="mb-4 grid items-start gap-3 xl:grid-cols-3">
+            <SectionHeading>Trends</SectionHeading>
+            <div className="mb-10 grid items-start gap-3 xl:grid-cols-3">
                 <ChartCard
                     icon={TrendingUpIcon}
                     title="Sales over time"
@@ -393,6 +400,7 @@ export default function MerchantDashboardPage() {
             </div>
 
             {/* Row 3: one card for the latest orders, payments and invoices, with arrows to switch. */}
+            <SectionHeading>Recent activity</SectionHeading>
             <RecentActivity data={data} selectedId={panel?.id} onSelect={setPanel} />
 
             {panel ? (

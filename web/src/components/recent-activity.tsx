@@ -67,7 +67,7 @@ export function RecentActivity({
     return (
         <ListCard
             icon={tab.icon}
-            title="Recent activity"
+            title={tab.label}
             description={tab.description}
             tools={
                 <>
