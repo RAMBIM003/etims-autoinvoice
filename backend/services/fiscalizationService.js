@@ -2,6 +2,7 @@ const db = require('../db');
 const receipts = require('./receiptService');
 const sms = require('./smsService');
 const events = require('./eventService');
+const { claimKraNumber, recordAccepted } = require('./kraInvoiceNumbers');
 
 const fail = (message, status) =>
     Object.assign(new Error(message), { status });
@@ -269,22 +270,10 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
         }
     }
 
-    // Atomic claim: only one submission can run per invoice.
-    const claimed = (
-        await db.query(
-            `UPDATE invoices
-             SET fiscalization_status = 'PROCESSING',
-                 updated_at = now()
-             WHERE id = $1
-               AND fiscalization_status IN ('PENDING', 'FAILED')
-             RETURNING *`,
-            [invoice.id]
-        )
-    ).rows[0];
-
-    if (!claimed) {
-        throw fail('This invoice is already being fiscalized', 409);
-    }
+    // Atomic claim: only one submission runs per invoice, and the KRA number is stored
+    // before anything is sent. A retry reuses the number it already has.
+    const claimed = await claimKraNumber(invoice);
+    const kraInvcNo = Number(claimed.kra_invc_no);
 
     // Items are registered beforehand via itemKraService (POST /api/kra-items/:id/register).
 
@@ -333,9 +322,7 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
         tin,
         bhfId: branch,
         trdInvcNo: invoice.invoice_number,
-        invcNo:
-            (Number(process.env.KRA_INVOICE_NO_OFFSET) || 0) +
-            (Number(String(invoice.invoice_number).split('-').pop()) || 1),
+        invcNo: kraInvcNo,
         orgInvcNo: 0,
         custTin: invoice.buyer_pin || null,
         custNm: invoice.buyer_name || null,
@@ -436,14 +423,18 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
             [error.message, invoice.id, attempt]
         );
 
+        /* KRA may have received it. Keep the same number so a retry cannot create a duplicate. */
         await db.query(
             `UPDATE invoices
-             SET fiscalization_status = 'FAILED', updated_at = now()
+             SET fiscalization_status = 'PENDING_KRA', updated_at = now()
              WHERE id = $1`,
             [invoice.id]
         );
 
-        throw fail('Could not reach KRA eTIMS', 502);
+        throw fail(
+            'Could not reach KRA eTIMS. The invoice keeps its KRA number and will be resent with that same number.',
+            502
+        );
     }
 
     const success = response.ok && body.resultCd === '000';
@@ -469,12 +460,23 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
     );
 
     if (!success) {
+        /* 994 means KRA already holds this number. Resending could duplicate the sale,
+           so a person must check with KRA before anything else is done. */
+        const status = body.resultCd === '994' ? 'NEEDS_CHECK' : 'FAILED';
+
         await db.query(
             `UPDATE invoices
-             SET fiscalization_status = 'FAILED', updated_at = now()
+             SET fiscalization_status = $2, updated_at = now()
              WHERE id = $1`,
-            [invoice.id]
+            [invoice.id, status]
         );
+
+        if (status === 'NEEDS_CHECK') {
+            throw fail(
+                `KRA already holds invoice number ${kraInvcNo} (994). Do not resend. Check with KRA support before continuing.`,
+                409
+            );
+        }
 
         throw fail(
             `KRA ${body.resultCd || response.status}: ${body.resultMsg || 'request rejected'}`,
@@ -509,6 +511,8 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
             ]
         )
     ).rows[0];
+
+    await recordAccepted(invoice, kraInvcNo);
 
     await db.query(
         `UPDATE sales
