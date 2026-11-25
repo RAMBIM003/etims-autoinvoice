@@ -4,7 +4,7 @@
 require('dotenv').config({ path: require('path').join(__dirname, '../.env') });
 const db = require('../db');
 
-const IGNORE = new Set(['cfmDt', 'salesDt', 'rcptPbctDt', 'invcNo', 'trdInvcNo', 'itemCd', 'itemNm', 'tin', 'bhfId', 'rptNo']);
+const IGNORE = new Set(['cfmDt', 'salesDt', 'rcptPbctDt', 'invcNo', 'trdInvcNo', 'itemCd', 'itemNm', 'tin', 'bhfId']);
 
 function flatten(obj, prefix = '', out = {}) {
   if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
