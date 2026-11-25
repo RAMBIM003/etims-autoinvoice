@@ -34,9 +34,13 @@ const stamp = () => {
   const diesel = (await db.query(
     `SELECT i.name, i.unit_price, m.item_cls_code, m.item_code
      FROM items i
+     JOIN merchants mc ON mc.id = i.merchant_id AND mc.kra_pin = $1
      JOIN item_kra_mappings m ON m.item_id = i.id AND m.active = true
      WHERE upper(i.name) = 'DIESEL'
-     LIMIT 1`
+       AND i.status = 'ACTIVE'
+     ORDER BY i.updated_at DESC
+     LIMIT 1`,
+    [tin]
   )).rows[0];
 
   if (!diesel) {
@@ -131,6 +135,7 @@ const stamp = () => {
     ]
   };
 
+  console.log(`Diesel item used: ${diesel.name} at KES ${price}, code ${diesel.item_code}`);
   console.log('Request that would be sent:');
   console.log(JSON.stringify(payload, null, 2));
 
