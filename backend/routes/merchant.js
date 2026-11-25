@@ -58,10 +58,16 @@ r.post('/merchant/register', wrap(async (q, s) => {
         throw fail('This KRA PIN is not valid', 400);
     }
 
-    const connection = await oscu.check(pin);
-
-    if (!connection.connected) {
-        throw fail(connection.message || 'KRA eTIMS connection could not be established', 502);
+    /* A test PIN does not use the OSCU device, which only serves the PIN in KRA_PIN.
+       The account is created so the sign-up can be tested; fiscalization is blocked for it. */
+    let connection;
+    if (kra.isTestPin(pin)) {
+        connection = { connected: true, message: 'Test PIN account: KRA eTIMS was not contacted' };
+    } else {
+        connection = await oscu.check(pin);
+        if (!connection.connected) {
+            throw fail(connection.message || 'KRA eTIMS connection could not be established', 502);
+        }
     }
 
     const bhf = process.env.KRA_BRANCH_ID || '00';
@@ -191,14 +197,28 @@ r.post('/merchant/check-pin', wrap(async (q, s) => {
 
     const result = await kra.validatePin(pin);
 
-    if (!result.valid) {
+    /* Same rule as sign-up: on the sandbox, a PIN the sandbox checker cannot verify is allowed
+       (flagged as unverified). Live never allows it. */
+    const sandboxUnavailable =
+        result.unavailable &&
+        result.code === '19005' &&
+        String(process.env.KRA_ENV || '').toUpperCase() === 'SANDBOX';
+
+    if (!result.valid && !sandboxUnavailable) {
         throw fail('This KRA PIN is not valid', 400);
     }
 
     const taken = (await db.query('SELECT 1 FROM merchants WHERE kra_pin = $1', [pin])).rowCount;
     if (taken) throw fail('This KRA PIN is already linked to another business', 409);
 
-    s.json({ pin, name: result.name || null, type: result.type || null, status: result.status || null });
+    s.json({
+        pin,
+        name: result.name || null,
+        type: result.type || null,
+        status: result.status || (sandboxUnavailable ? 'UNVERIFIED' : null),
+        unverified: Boolean(sandboxUnavailable),
+        test: Boolean(result.test)
+    });
 }));
 
 module.exports = r;

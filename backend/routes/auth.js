@@ -8,7 +8,8 @@ r.post('/otp/send',wrap(async(q,s)=>{
  if(!C.phoneOk(phone))throw fail('Invalid phone number',400);
  const u=await byPhone(C.phoneHash(phone));
  if(purpose!=='LOGIN'&&u)throw fail('This number already has an account. Sign in instead.',409);
- if(purpose==='LOGIN'&&!u)throw fail('No account found for this number. Sign in with your password or register as a buyer first.',404);
+ /* Same reply whether or not an account exists, so the form cannot be used to find which numbers have accounts. */
+ if(purpose==='LOGIN'&&!u){s.json({sent:true});return}
  await otp.send(phone,purpose);s.json({sent:true})}));
 r.post('/otp/verify',wrap(async(q,s)=>{
  const{phone,code,purpose}=q.body;
@@ -27,7 +28,7 @@ r.post('/auth/login-otp',wrap(async(q,s)=>{
  if(!C.phoneOk(phone))throw fail('Invalid phone number',400);
  await otp.verify(phone,code,'LOGIN');
  const u=await byPhone(C.phoneHash(phone));
- if(!u||u.status!=='ACTIVE')throw fail('No account found for this number',404);
+ if(!u||u.status!=='ACTIVE')throw fail('We could not sign you in with that number and code',401);
  await otp.consume(db.pool,phone,'LOGIN');await login(u,s)}));
 r.get('/auth/me',auth,wrap(async(q,s)=>{
  const u=(await db.query('SELECT id,email,full_name,phone_encrypted FROM users WHERE id=$1',[q.user.sub])).rows[0];

@@ -59,7 +59,40 @@ async function token() {
   return tok;
 }
 
+/*
+ * Test PINs are listed in KRA_TEST_PINS (comma separated) in .env, never in the code.
+ * A listed PIN is accepted without asking KRA, so a test account can be created.
+ * Every use is logged. Remove the PIN from .env when testing is finished.
+ */
+function testPins() {
+  return String(process.env.KRA_TEST_PINS || '')
+    .split(',')
+    .map(p => p.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+function isTestPin(pin) {
+  return testPins().includes(String(pin || '').trim().toUpperCase());
+}
+
 async function validatePin(pin) {
+  if (isTestPin(pin)) {
+    const p = String(pin).trim().toUpperCase();
+    console.warn('TEST KRA PIN accepted without a KRA check:', p);
+    return {
+      valid: true,
+      unavailable: false,
+      test: true,
+      pin: p,
+      name: 'Test taxpayer',
+      type: 'Test',
+      status: 'Active (test PIN)',
+      code: 'TEST',
+      message: 'Accepted as a test PIN by server configuration',
+      raw: { test: true }
+    };
+  }
+
   const url = process.env.KRA_PIN_CHECK_URL;
 
   if (!url || !/^https?:\/\//i.test(url)) {
@@ -141,5 +174,6 @@ async function validatePin(pin) {
 }
 
 module.exports = {
+  isTestPin,
   validatePin
 };

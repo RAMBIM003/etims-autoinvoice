@@ -166,6 +166,10 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
         throw fail('Sale not found or access denied', 404);
     }
 
+    if (require('./kraService').isTestPin(sale.kra_pin)) {
+        throw fail('This is a test PIN account. Invoices are not sent to KRA.', 409);
+    }
+
     const invoice = (
         await db.query(
             `SELECT *
