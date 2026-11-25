@@ -14,6 +14,8 @@ const stamp = () => {
 (async () => {
   const invcNo = Number(process.argv[2]);
   const send = process.argv.includes('--send');
+  /* Optional: --date=20261112 sets the sale date (YYYYMMDD) to test whether the date is the problem. */
+  const dateArg = (process.argv.find((a) => a.startsWith('--date=')) || '').split('=')[1] || null;
 
   if (!Number.isInteger(invcNo) || invcNo <= 0) {
     console.log('Give the invoice number to test, as a whole number. Example: node scripts/kra-test-invoice.js 43');
@@ -51,7 +53,7 @@ const stamp = () => {
   const price = Number(diesel.unit_price);
   const tax = Math.round(price * 0.08 * 100) / 100;
   const total = price + tax;
-  const now = stamp();
+  const now = dateArg ? `${dateArg}${stamp().slice(8)}` : stamp();
 
   const payload = {
     tin,
