@@ -403,6 +403,12 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
     let response;
     let body;
 
+    /* Debug only: set KRA_DEBUG=1 in .env. The body holds no keys or tokens; the CMC key is in the headers and is never printed. */
+    const debug = process.env.KRA_DEBUG === '1';
+    if (debug) {
+        console.log(`KRA REQUEST invoice ${invoice.invoice_number} invcNo ${kraInvcNo}:`, JSON.stringify(payload, null, 2));
+    }
+
     try {
         response = await fetch(`${baseUrl()}/saveTrnsSalesOsdc`, {
             method: 'POST',
@@ -417,6 +423,10 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
         });
 
         body = await response.json().catch(() => ({}));
+
+        if (debug) {
+            console.log(`KRA RESPONSE invoice ${invoice.invoice_number} HTTP ${response.status}:`, JSON.stringify(body, null, 2));
+        }
     } catch (error) {
         await db.query(
             `UPDATE fiscalization_attempts
