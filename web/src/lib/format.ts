@@ -61,6 +61,7 @@ const TONES: Record<string, Tone> = {
     PROCESSING: "warn",
     PENDING_KRA: "warn",
     NEEDS_CHECK: "warn",
+    HELD_BY_KRA: "warn",
     UNMATCHED: "warn",
     PARTIALLY_PAID: "warn",
     QUEUED: "warn",
