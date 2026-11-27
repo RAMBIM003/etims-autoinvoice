@@ -10,10 +10,12 @@ const db = require('../db');
 const FIXES = [
     { name: 'Car Wash', itemCd: 'KE2NTNO0000002' },
     { name: 'Engine Oil 1L', itemCd: 'KE2NTNO0000001' },
-    { name: 'Super Petrol', itemCd: 'KE2NTLTR0000003' }
+    { name: 'Super Petrol', itemCd: 'KE2NTLTR0000003' },
+    { name: 'Diesel', itemCd: 'KE2NTLTR0000006' },
+    { name: 'Kerosene', itemCd: 'KE2NTLTR0000005' }
 ];
 
-// Kerosene has no KRA registration yet. Mark it inactive so it cannot be sold until it is registered.
+// Kerosene is kept inactive until it is ready to sell. Its code is still corrected above.
 const DEACTIVATE = ['Kerosene'];
 
 (async () => {
@@ -39,28 +41,40 @@ const DEACTIVATE = ['Kerosene'];
             const reg = byCode.get(fix.itemCd);
             if (!reg) throw new Error(`${fix.itemCd} is not in the KRA registry file. Nothing changed.`);
 
+            // Any status: an inactive item still gets its code corrected.
             const row = (
                 await client.query(
-                    `SELECT i.id, m.item_code, m.item_cls_code
+                    `SELECT i.id, i.status, i.tax_type_code, m.id AS mapping_id, m.item_code, m.item_cls_code
                      FROM items i
                      JOIN merchants me ON me.id = i.merchant_id
                      LEFT JOIN item_kra_mappings m ON m.item_id = i.id AND m.active = true
-                     WHERE UPPER(me.kra_pin) = $1 AND i.name = $2 AND i.status = 'ACTIVE'`,
+                     WHERE UPPER(me.kra_pin) = $1 AND i.name = $2`,
                     [pin, fix.name]
                 )
             ).rows[0];
 
-            if (!row) throw new Error(`Active item "${fix.name}" not found for ${pin}. Nothing changed.`);
+            if (!row) throw new Error(`Item "${fix.name}" not found for ${pin}. Nothing changed.`);
 
-            console.log(`${fix.name}: code ${row.item_code} -> ${fix.itemCd}, class ${row.item_cls_code} -> ${reg.itemClsCd}`);
+            const taxNote = String(row.tax_type_code || '').toUpperCase() === String(reg.taxTyCd)
+                ? ''
+                : `  (WARNING: our tax type ${row.tax_type_code} differs from KRA ${reg.taxTyCd})`;
+
+            console.log(`${fix.name}: code ${row.item_code || 'none'} -> ${fix.itemCd}, class ${row.item_cls_code || 'none'} -> ${reg.itemClsCd}${taxNote}`);
 
             if (apply) {
-                await client.query(
-                    `UPDATE item_kra_mappings
-                     SET item_code = $1, item_cls_code = $2
-                     WHERE item_id = $3 AND active = true`,
-                    [fix.itemCd, reg.itemClsCd, row.id]
-                );
+                if (row.mapping_id) {
+                    await client.query(
+                        `UPDATE item_kra_mappings SET item_code = $1, item_cls_code = $2 WHERE id = $3`,
+                        [fix.itemCd, reg.itemClsCd, row.mapping_id]
+                    );
+                } else {
+                    await client.query(
+                        `INSERT INTO item_kra_mappings
+                            (item_id, item_cls_code, item_code, item_name, tax_type_code, source, active)
+                         VALUES ($1, $2, $3, $4, $5, 'MANUAL', true)`,
+                        [row.id, reg.itemClsCd, fix.itemCd, fix.name, row.tax_type_code]
+                    );
+                }
             }
         }
 
@@ -75,7 +89,7 @@ const DEACTIVATE = ['Kerosene'];
 
             if (!r) throw new Error(`Item "${name}" not found for ${pin}. Nothing changed.`);
 
-            console.log(`${name}: status ${r.status} -> INACTIVE (not registered with KRA)`);
+            console.log(`${name}: status ${r.status} -> INACTIVE (kept inactive until it is ready to sell)`);
 
             if (apply) {
                 await client.query(`UPDATE items SET status = 'INACTIVE', updated_at = now() WHERE id = $1`, [r.id]);
