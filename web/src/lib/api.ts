@@ -134,6 +134,8 @@ export const api = {
     kraItemClasses: (term = "") => get<unknown[]>(`/kra-items/classes${term ? `?q=${encodeURIComponent(term)}` : ""}`),
     registerKraItem: (itemId: string, body: unknown) => post(`/kra-items/${itemId}/register`, body),
     fiscalize: (saleId: string) => post(`/kra/fiscalize/${saleId}`),
+    releaseKraNumber: (invoiceId: string) =>
+        post<{ invoice_number: string; released_number: number }>(`/kra/invoices/${invoiceId}/release-number`),
 
     /* Connections */
     connections: () => get<Record<string, unknown>>("/connections"),

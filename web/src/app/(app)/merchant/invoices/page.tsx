@@ -323,6 +323,20 @@ function InvoiceActions({
     const [retrying, setRetrying] = React.useState(false);
     const canRetry = status === "PENDING" || status === "FAILED";
 
+    /* Only for an invoice KRA refused as already existing; the server checks this and says why if not. */
+    const canRelease = status === "FAILED" || status === "NEEDS_CHECK";
+
+    async function release() {
+        try {
+            const out = await api.releaseKraNumber(id);
+            toast.success(`${number} released KRA number ${out.released_number}. Retry it to send it again.`);
+        } catch (error) {
+            toast.error(error instanceof ApiError ? error.message : "This invoice's number could not be released.");
+        } finally {
+            onChanged();
+        }
+    }
+
     async function retry() {
         setRetrying(true);
 
@@ -369,6 +383,14 @@ function InvoiceActions({
                 <DropdownMenuItem onSelect={() => window.open(`/invoices/${id}?print=1`, "_blank", "noopener")}>
                     <PrinterIcon /> Print invoice
                 </DropdownMenuItem>
+                {canRelease ? (
+                    <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={release}>
+                            <RotateCwIcon /> Release KRA number
+                        </DropdownMenuItem>
+                    </>
+                ) : null}
             </DropdownMenuContent>
         </DropdownMenu>
         </div>

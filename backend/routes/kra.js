@@ -3,6 +3,7 @@ const db = require('../db');
 const kra = require('../services/kraService');
 const oscu = require('../services/oscuService');
 const fiscalization = require('../services/fiscalizationService');
+const { releaseKraNumber } = require('../services/kraInvoiceNumbers');
 const auth = require('../middleware/auth');
 const wrap = require('../middleware/wrap');
 
@@ -213,6 +214,29 @@ r.post('/kra/connect', auth, wrap(async (q, s) => {
         },
         oscu: connection
     });
+}));
+
+/*
+ * Frees the KRA number of an invoice KRA refused as already existing (924 every time),
+ * so the next retry takes a new number. Merchant-only, same as the fiscalize route.
+ */
+r.post('/kra/invoices/:invoiceId/release-number', auth, wrap(async (q, s) => {
+    const membership = (
+        await db.query(
+            `SELECT merchant_id
+             FROM merchant_users
+             WHERE user_id = $1
+               AND status = 'ACTIVE'
+             LIMIT 1`,
+            [q.user.sub]
+        )
+    ).rows[0];
+
+    if (!membership) {
+        throw fail('Merchant account not found', 404);
+    }
+
+    s.json(await releaseKraNumber(q.params.invoiceId, membership.merchant_id));
 }));
 
 /*

@@ -93,4 +93,59 @@ async function recordAccepted(invoice, kraNumber) {
     );
 }
 
-module.exports = { claimKraNumber, recordAccepted };
+/**
+ * Frees the KRA number an invoice holds when KRA refused it as already existing (924)
+ * on every attempt. Refused if KRA ever accepted the invoice, so nothing is duplicated.
+ * The invoice's next retry then takes a new number.
+ */
+async function releaseKraNumber(invoiceId, merchantId) {
+    const inv = (
+        await db.query(
+            `SELECT id, invoice_number, fiscalization_status, kra_invc_no
+             FROM invoices
+             WHERE id = $1 AND merchant_id = $2`,
+            [invoiceId, merchantId]
+        )
+    ).rows[0];
+
+    if (!inv) throw fail('Invoice not found', 404);
+
+    if (!['FAILED', 'NEEDS_CHECK'].includes(inv.fiscalization_status)) {
+        throw fail(`${inv.invoice_number} is ${inv.fiscalization_status}. Only failed invoices can be released.`, 409);
+    }
+
+    if (inv.kra_invc_no == null) {
+        throw fail(`${inv.invoice_number} holds no KRA number.`, 409);
+    }
+
+    const codes = (
+        await db.query(
+            `SELECT response_payload->>'resultCd' AS code
+             FROM fiscalization_attempts
+             WHERE invoice_id = $1`,
+            [inv.id]
+        )
+    ).rows.map(row => row.code);
+
+    if (codes.includes('000')) {
+        throw fail(`${inv.invoice_number} was accepted by KRA, so its number cannot be released.`, 409);
+    }
+
+    if (!codes.length || codes.some(code => code !== '924')) {
+        throw fail(
+            `KRA did not refuse ${inv.invoice_number} with 924 on every attempt, so its number cannot be released.`,
+            409
+        );
+    }
+
+    await db.query(
+        `UPDATE invoices
+         SET kra_invc_no = NULL, fiscalization_status = 'FAILED', updated_at = now()
+         WHERE id = $1`,
+        [inv.id]
+    );
+
+    return { invoice_number: inv.invoice_number, released_number: Number(inv.kra_invc_no) };
+}
+
+module.exports = { claimKraNumber, recordAccepted, releaseKraNumber };

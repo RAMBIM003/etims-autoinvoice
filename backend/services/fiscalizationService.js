@@ -69,6 +69,44 @@ async function kraPost(endpoint, headers, payload) {
     };
 }
 
+// Units KRA accepts for quantity (same list the registration code uses).
+const KRA_UNITS = ['NO', 'KG', 'BX', 'PA', 'LTR'];
+
+// KRA's item registry for this device, cached for 10 minutes. Returns null when KRA
+// cannot be reached, so the pre-send check then steps aside and KRA decides.
+const registryCache = { at: 0, key: '', byCode: null };
+
+async function kraRegistry({ tin, branch, cmcKey }) {
+    const key = `${tin}|${branch}`;
+
+    if (registryCache.byCode && registryCache.key === key && Date.now() - registryCache.at < 10 * 60 * 1000) {
+        return registryCache.byCode;
+    }
+
+    try {
+        const { status, body } = await kraPost(
+            '/selectItemList',
+            { tin, bhfId: branch, cmcKey },
+            { tin, bhfId: branch, cmcKey, lastReqDt: '20000101000000' }
+        );
+
+        if (status !== 200 || body.resultCd !== '000') {
+            console.warn(`KRA item registry unavailable (${body.resultCd || status}); skipping the registry check.`);
+            return null;
+        }
+
+        const list = (body.data && body.data.itemList) || [];
+        registryCache.at = Date.now();
+        registryCache.key = key;
+        registryCache.byCode = new Map(list.map(row => [row.itemCd, row]));
+
+        return registryCache.byCode;
+    } catch (error) {
+        console.warn('KRA item registry check skipped:', error.message);
+        return null;
+    }
+}
+
 // Best effort: KRA expects an item to be registered before it is sold.
 // A failure here is logged but does not stop the sale attempt.
 async function registerItems({ tin, branch, cmcKey, items }) {
@@ -273,6 +311,53 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
         if (!(num(item.quantity) > 0)) {
             throw fail('Sale contains an invalid item quantity', 400);
         }
+
+        if (!KRA_UNITS.includes(qtyUnit(item.unit_code))) {
+            throw fail(
+                `"${item.item_name}" has unit ${item.unit_code}, which KRA does not have. Change the item's unit.`,
+                400
+            );
+        }
+    }
+
+    // Our own arithmetic must agree before anything is sent: a mismatch would be refused by KRA.
+    const lineTotal = items.reduce((sum, item) => sum + num(item.line_total), 0);
+    if (Math.abs(lineTotal - num(sale.total_amount)) > 0.01) {
+        throw fail(
+            `The order total ${money(sale.total_amount)} does not match its items ${money(lineTotal)}. Fix the order before sending.`,
+            400
+        );
+    }
+
+    // Checked against KRA's own registry when it can be reached. An item KRA does not know,
+    // or with a different tax type or class, is caught here rather than refused as "999".
+    const registry = await kraRegistry({ tin, branch, cmcKey });
+
+    if (registry) {
+        for (const item of items) {
+            const reg = registry.get(item.cd);
+
+            if (!reg) {
+                throw fail(
+                    `"${item.item_name}" code ${item.cd} is not in KRA's item registry. Re-register the item first.`,
+                    400
+                );
+            }
+
+            if (String(reg.taxTyCd) !== taxCode(item)) {
+                throw fail(
+                    `"${item.item_name}" tax type ${taxCode(item)} does not match KRA's registration (${reg.taxTyCd}). Fix the item's tax type.`,
+                    400
+                );
+            }
+
+            if (String(reg.itemClsCd) !== String(item.cls)) {
+                throw fail(
+                    `"${item.item_name}" class ${item.cls} does not match KRA's registration (${reg.itemClsCd}). Re-register the item.`,
+                    400
+                );
+            }
+        }
     }
 
     // Atomic claim: only one submission runs per invoice, and the KRA number is stored
@@ -475,9 +560,10 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
     );
 
     if (!success) {
-        /* 994 means KRA already holds this number. Resending could duplicate the sale,
-           so a person must check with KRA before anything else is done. */
-        const status = body.resultCd === '994' ? 'NEEDS_CHECK' : 'FAILED';
+        /* 994 and 924 both mean KRA already holds this number. Resending could duplicate
+           the sale (for example after a timeout KRA actually accepted), so a person checks first. */
+        const holdsNumber = body.resultCd === '994' || body.resultCd === '924';
+        const status = holdsNumber ? 'NEEDS_CHECK' : 'FAILED';
 
         await db.query(
             `UPDATE invoices
@@ -488,7 +574,7 @@ async function fiscalizeSaleInner(saleId, merchantId = null) {
 
         if (status === 'NEEDS_CHECK') {
             throw fail(
-                `KRA already holds invoice number ${kraInvcNo} (994). Do not resend. Check with KRA support before continuing.`,
+                `KRA ${body.resultCd}: invoice number ${kraInvcNo} is already held at KRA. Do not resend. Check with KRA before continuing.`,
                 409
             );
         }
@@ -567,6 +653,16 @@ const FAILURE_CODES = [
     ['No matched payment exists', 'FIS-07', 'The order is not paid yet'],
     ['already being fiscalized', 'FIS-08', 'A fiscalization for this invoice is already running'],
     ['Could not reach KRA eTIMS', 'FIS-09', 'KRA eTIMS could not be reached (network or timeout)'],
+    ['which KRA does not have', 'FIS-13', 'An item unit is one KRA does not accept'],
+    ["is not in KRA's item registry", 'FIS-14', 'An item code is not in KRA\'s item registry'],
+    ['does not match KRA\'s registration', 'FIS-15', 'An item tax type or class differs from KRA\'s registration'],
+    ['does not match its items', 'FIS-16', 'The order total does not match its items'],
+    ['KRA 910', 'FIS-17', 'KRA rejected a field in the invoice (the message names it)'],
+    ['KRA 999', 'FIS-18', 'KRA could not process the invoice (its own error). Nothing changed on our side'],
+    ['KRA 401', 'FIS-19', 'KRA rejected the device credentials (check the CMC key and PIN)'],
+    ['KRA 403', 'FIS-19', 'KRA rejected the device credentials (check the CMC key and PIN)'],
+    ['KRA 924', 'FIS-20', 'KRA already holds this invoice number. Check before retrying'],
+    ['KRA 994', 'FIS-21', 'KRA already holds this invoice number. Check before retrying'],
     ['KRA ', 'FIS-10', 'KRA refused the invoice'],
     ['Sale contains an invalid item quantity', 'FIS-11', 'An item quantity is zero or invalid'],
     ['Sale not found or access denied', 'FIS-12', 'The order was not found for this merchant']
@@ -627,4 +723,50 @@ function fiscalizeInBackground(saleId) {
     });
 }
 
-module.exports = { fiscalizeSale, fiscalizeInBackground };
+/*
+ * Retries invoices whose KRA submission timed out (PENDING_KRA). The invoice keeps its
+ * number, so a retry cannot create a duplicate. If KRA did accept the first attempt, it
+ * answers 924 and the invoice moves to NEEDS_CHECK for a person to look at.
+ */
+const RETRY_EVERY_MS = 2 * 60 * 1000;
+const MAX_ATTEMPTS = 5;
+let sweeping = false;
+
+async function retryPendingKra() {
+    if (sweeping) return;
+    sweeping = true;
+
+    try {
+        const rows = (
+            await db.query(
+                `SELECT i.sale_id, i.invoice_number
+                 FROM invoices i
+                 WHERE i.fiscalization_status = 'PENDING_KRA'
+                   AND i.updated_at < now() - interval '2 minutes'
+                   AND (
+                       SELECT COUNT(*) FROM fiscalization_attempts a
+                       WHERE a.invoice_id = i.id
+                   ) < $1
+                 ORDER BY i.updated_at
+                 LIMIT 5`,
+                [MAX_ATTEMPTS]
+            )
+        ).rows;
+
+        for (const row of rows) {
+            await fiscalizeSale(row.sale_id).catch(error =>
+                console.warn(`Automatic retry for ${row.invoice_number} stopped: ${error.message}`)
+            );
+        }
+    } catch (error) {
+        console.warn('KRA retry sweep failed:', error.message);
+    } finally {
+        sweeping = false;
+    }
+}
+
+if (process.env.KRA_RETRY_SWEEP !== '0') {
+    setInterval(retryPendingKra, RETRY_EVERY_MS).unref();
+}
+
+module.exports = { fiscalizeSale, fiscalizeInBackground, classify, FAILURE_CODES };
