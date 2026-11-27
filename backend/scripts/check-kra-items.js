@@ -7,10 +7,9 @@ const fs = require('fs');
 const db = require('../db');
 
 // Same rule fiscalizationService.js uses when it builds the invoice (qtyUnit).
-// The registration code (itemKraService.js) uses a different rule, so a mismatch shows here.
 const unitSent = code => {
     const c = String(code || '').toUpperCase();
-    return !c || c === 'PCS' ? 'U' : c;
+    return !c || c === 'PCS' ? 'NO' : c;
 };
 
 (async () => {

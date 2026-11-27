@@ -39,7 +39,8 @@ const taxCode = item => {
 
 const qtyUnit = code => {
     const c = String(code || '').toUpperCase();
-    return !c || c === 'PCS' ? 'U' : c;
+    /* Same rule as itemKraService.js registration: PCS is KRA unit NO. */
+    return !c || c === 'PCS' ? 'NO' : c;
 };
 
 // KRA item codes follow: origin(2) + type(1) + package(2) + quantity(2) + seq(7),
